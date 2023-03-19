@@ -4,6 +4,8 @@ use rsdsl_netlinkd::{addr, link, route};
 use std::fs::File;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
+use std::thread;
+use std::time::Duration;
 
 use notify::event::{CreateKind, ModifyKind};
 use notify::{Event, EventKind, RecursiveMode, Watcher};
@@ -26,10 +28,18 @@ fn main() -> Result<()> {
         Err(e) => println!("[netlinkd] watch error: {}", e),
     })?;
 
-    watcher.watch(
-        Path::new("/data/pppoe.ip_config"),
-        RecursiveMode::NonRecursive,
-    )?;
+    loop {
+        match watcher.watch(
+            Path::new("/data/pppoe.ip_config"),
+            RecursiveMode::NonRecursive,
+        ) {
+            Ok(_) => break,
+            Err(_) => {
+                println!("[netlinkd] waiting for rsdsl_pppoe");
+                thread::sleep(Duration::from_secs(8));
+            }
+        }
+    }
 
     Ok(())
 }
