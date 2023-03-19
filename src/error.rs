@@ -8,8 +8,12 @@ pub enum Error {
     LinkNotFound(String),
     #[error("io")]
     Io(#[from] io::Error),
+    #[error("notify")]
+    Notify(#[from] notify::Error),
     #[error("rtnetlink")]
     RtNetlink(#[from] rtnetlink::Error),
+    #[error("serde_json")]
+    SerdeJson(#[from] serde_json::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
