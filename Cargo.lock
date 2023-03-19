@@ -236,16 +236,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "netlinkd"
-version = "0.1.0"
-dependencies = [
- "futures-util",
- "rtnetlink",
- "thiserror",
- "tokio",
-]
-
-[[package]]
 name = "nix"
 version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -301,6 +291,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4424af4bf778aae2051a77b60283332f386554255d722233d09fbfc7e30da2fc"
 dependencies = [
  "proc-macro2",
+]
+
+[[package]]
+name = "rsdsl_netlinkd"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "rtnetlink",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
-use netlinkd::error::Result;
-use netlinkd::link;
+use rsdsl_netlinkd::error::Result;
+use rsdsl_netlinkd::link;
 
 fn main() -> Result<()> {
     link::up("eth0".into())?;
