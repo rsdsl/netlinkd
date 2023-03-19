@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use notify::event::{CreateKind, ModifyKind};
 use notify::{Event, EventKind, RecursiveMode, Watcher};
-use rsdsl_pppoe::client::IpConfig;
+use rsdsl_ip_config::IpConfig;
 
 fn main() -> Result<()> {
     link::up("eth0".into())?;
