@@ -14,27 +14,21 @@ fn main() -> Result<()> {
     link::up("eth0".into())?;
     link::up("eth1".into())?;
 
+    let ip_config = Path::new("/data/pppoe.ip_config");
+    while !ip_config.exists() {
+        println!("[netlinkd] waiting for PPPoE connection");
+        thread::sleep(Duration::from_secs(8));
+    }
+
     let mut watcher = notify::recommended_watcher(|res: notify::Result<Event>| match res {
         Ok(_) => configure_wan(),
         Err(e) => println!("[netlinkd] watch error: {}", e),
     })?;
 
-    loop {
-        match watcher.watch(
-            Path::new("/data/pppoe.ip_config"),
-            RecursiveMode::NonRecursive,
-        ) {
-            Ok(_) => break,
-            Err(_) => {
-                println!("[netlinkd] waiting for rsdsl_pppoe");
-                thread::sleep(Duration::from_secs(8));
-            }
-        }
-    }
+    watcher.watch(ip_config, RecursiveMode::NonRecursive)?;
 
-    loop {
-        thread::sleep(Duration::MAX)
-    }
+    println!("[netlinkd] exiting");
+    Ok(())
 }
 
 fn configure_wan() {
