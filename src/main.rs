@@ -50,7 +50,13 @@ fn configure_rsppp0() -> Result<()> {
     addr::flush("rsppp0".into())?;
     addr::add("rsppp0".into(), IpAddr::V4(ip_config.addr), 32)?;
 
-    route::add4(Ipv4Addr::UNSPECIFIED, 0, ip_config.rtr, "rsppp0".into())?;
+    route::add4(ip_config.rtr, 32, None, "rsppp0".into())?;
+    route::add4(
+        Ipv4Addr::UNSPECIFIED,
+        0,
+        Some(ip_config.rtr),
+        "rsppp0".into(),
+    )?;
 
     Ok(())
 }
