@@ -4,6 +4,8 @@ use rsdsl_netlinkd::{addr, link, route};
 use std::fs::File;
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
+use std::thread;
+use std::time::Duration;
 
 use notify::event::{CreateKind, ModifyKind};
 use notify::{Event, EventKind, RecursiveMode, Watcher};
@@ -13,18 +15,26 @@ fn main() -> Result<()> {
     link::up("eth0".into())?;
     link::up("eth1".into())?;
 
-    let mut watcher = notify::recommended_watcher(|res: notify::Result<Event>| match res {
-        Ok(event) => match event.kind {
-            EventKind::Create(kind) if kind == CreateKind::File => {
-                configure_wan();
+    let mut watcher = loop {
+        match notify::recommended_watcher(|res: notify::Result<Event>| match res {
+            Ok(event) => match event.kind {
+                EventKind::Create(kind) if kind == CreateKind::File => {
+                    configure_wan();
+                }
+                EventKind::Modify(kind) if matches!(kind, ModifyKind::Data(_)) => {
+                    configure_wan();
+                }
+                _ => {}
+            },
+            Err(e) => println!("[netlinkd] watch error: {}", e),
+        }) {
+            Ok(v) => break v,
+            Err(_) => {
+                println!("[netlinkd] waiting for rsdsl_pppoe");
+                thread::sleep(Duration::from_secs(8));
             }
-            EventKind::Modify(kind) if matches!(kind, ModifyKind::Data(_)) => {
-                configure_wan();
-            }
-            _ => {}
-        },
-        Err(e) => println!("[netlinkd] watch error: {}", e),
-    })?;
+        }
+    };
 
     watcher.watch(
         Path::new("/data/pppoe.ip_config"),
