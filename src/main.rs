@@ -24,7 +24,7 @@ fn main() -> Result<()> {
 
     let mut watcher = notify::recommended_watcher(|res: notify::Result<Event>| match res {
         Ok(_) => configure_wan(),
-        Err(e) => println!("[netlinkd] watch error: {}", e),
+        Err(e) => println!("[netlinkd] watch error: {:?}", e),
     })?;
 
     watcher.watch(ip_config, RecursiveMode::NonRecursive)?;
@@ -37,7 +37,7 @@ fn main() -> Result<()> {
 fn configure_wan() {
     match configure_rsppp0() {
         Ok(_) => println!("[netlinkd] configure rsppp0 with PPPoE data"),
-        Err(e) => println!("[netlinkd] can't configure rsppp0: {}", e),
+        Err(e) => println!("[netlinkd] can't configure rsppp0: {:?}", e),
     }
 }
 

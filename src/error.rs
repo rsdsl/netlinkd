@@ -6,13 +6,13 @@ use thiserror::Error;
 pub enum Error {
     #[error("link {0} not found")]
     LinkNotFound(String),
-    #[error("io")]
+    #[error("io: {0}")]
     Io(#[from] io::Error),
-    #[error("notify")]
+    #[error("notify: {0}")]
     Notify(#[from] notify::Error),
-    #[error("rtnetlink")]
+    #[error("rtnetlink: {0}")]
     RtNetlink(#[from] rtnetlink::Error),
-    #[error("serde_json")]
+    #[error("serde_json: {0}")]
     SerdeJson(#[from] serde_json::Error),
 }
 
