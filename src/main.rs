@@ -41,7 +41,9 @@ fn main() -> Result<()> {
         }
     }
 
-    Ok(())
+    loop {
+        thread::sleep(Duration::MAX)
+    }
 }
 
 fn configure_wan() {
