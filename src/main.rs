@@ -20,6 +20,8 @@ fn main() -> Result<()> {
         thread::sleep(Duration::from_secs(8));
     }
 
+    configure_wan();
+
     let mut watcher = notify::recommended_watcher(|res: notify::Result<Event>| match res {
         Ok(_) => configure_wan(),
         Err(e) => println!("[netlinkd] watch error: {}", e),
@@ -27,8 +29,9 @@ fn main() -> Result<()> {
 
     watcher.watch(ip_config, RecursiveMode::NonRecursive)?;
 
-    println!("[netlinkd] exiting");
-    Ok(())
+    loop {
+        thread::sleep(Duration::MAX)
+    }
 }
 
 fn configure_wan() {
