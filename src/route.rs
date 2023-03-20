@@ -3,6 +3,7 @@ use crate::error::{Error, Result};
 use std::net::Ipv4Addr;
 
 use futures_util::TryStreamExt;
+use netlink_packet_route::rtnl::RT_SCOPE_LINK;
 use tokio::runtime::Runtime;
 
 async fn do_add4(dst: Ipv4Addr, prefix_len: u8, rtr: Option<Ipv4Addr>, link: String) -> Result<()> {
@@ -29,6 +30,8 @@ async fn do_add4(dst: Ipv4Addr, prefix_len: u8, rtr: Option<Ipv4Addr>, link: Str
 
     if let Some(rtr) = rtr {
         add = add.gateway(rtr);
+    } else {
+        add = add.scope(RT_SCOPE_LINK);
     }
 
     add.execute().await?;
