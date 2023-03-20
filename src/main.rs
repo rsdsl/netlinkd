@@ -7,7 +7,8 @@ use std::path::Path;
 use std::thread;
 use std::time::Duration;
 
-use notify::{Event, RecursiveMode, Watcher};
+use notify::event::{CreateKind, ModifyKind};
+use notify::{Event, EventKind, RecursiveMode, Watcher};
 use rsdsl_ip_config::IpConfig;
 
 fn main() -> Result<()> {
@@ -23,7 +24,15 @@ fn main() -> Result<()> {
     configure_wan();
 
     let mut watcher = notify::recommended_watcher(|res: notify::Result<Event>| match res {
-        Ok(_) => configure_wan(),
+        Ok(event) => match event.kind {
+            EventKind::Create(kind) if kind == CreateKind::File => {
+                configure_wan();
+            }
+            EventKind::Modify(kind) if matches!(kind, ModifyKind::Data(_)) => {
+                configure_wan();
+            }
+            _ => {}
+        },
         Err(e) => println!("[netlinkd] watch error: {:?}", e),
     })?;
 
