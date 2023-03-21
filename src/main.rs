@@ -1,7 +1,7 @@
 use rsdsl_netlinkd::error::Result;
 use rsdsl_netlinkd::{addr, link, route};
 
-use std::fs::File;
+use std::fs::{self, File};
 use std::net::{IpAddr, Ipv4Addr};
 use std::path::Path;
 use std::thread;
@@ -12,6 +12,8 @@ use notify::{Event, EventKind, RecursiveMode, Watcher};
 use rsdsl_ip_config::IpConfig;
 
 fn main() -> Result<()> {
+    fs::write("/proc/sys/net/ipv4/ip_forward", "1")?;
+
     link::up("eth0".into())?;
     link::up("eth1".into())?;
 
