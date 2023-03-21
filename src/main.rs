@@ -17,6 +17,14 @@ fn main() -> Result<()> {
     link::up("eth0".into())?;
     link::up("eth1".into())?;
 
+    match configure_eth0() {
+        Ok(_) => println!("[netlinkd] configure eth0 statically (10.128.0.254/24)"),
+        Err(e) => {
+            println!("[netlinkd] can't configure eth0: {:?}", e);
+            return Err(e);
+        }
+    }
+
     let ip_config = Path::new("/data/pppoe.ip_config");
     while !ip_config.exists() {
         println!("[netlinkd] waiting for PPPoE connection");
@@ -43,6 +51,13 @@ fn main() -> Result<()> {
     loop {
         thread::sleep(Duration::MAX)
     }
+}
+
+fn configure_eth0() -> Result<()> {
+    addr::flush("eth0".into())?;
+    addr::add("eth0".into(), "10.128.0.254".parse()?, 24)?;
+
+    Ok(())
 }
 
 fn configure_wan() {

@@ -1,4 +1,5 @@
 use std::io;
+use std::net;
 
 use thiserror::Error;
 
@@ -8,6 +9,8 @@ pub enum Error {
     LinkNotFound(String),
     #[error("io: {0}")]
     Io(#[from] io::Error),
+    #[error("net: parse ip address: {0}")]
+    NetAddrParseError(#[from] net::AddrParseError),
     #[error("notify: {0}")]
     Notify(#[from] notify::Error),
     #[error("rtnetlink: {0}")]
