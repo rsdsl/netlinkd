@@ -68,6 +68,9 @@ fn configure_wan() {
 }
 
 fn configure_rsppp0() -> Result<()> {
+    // I've never seen ISPs tunnel IPv6 in PPP and haven't implemented it.
+    fs::write("/proc/sys/net/ipv6/conf/rsppp0/disable_ipv6", "1")?;
+
     link::up("rsppp0".into())?;
 
     let mut file = File::open(rsdsl_ip_config::LOCATION)?;
