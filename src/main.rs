@@ -25,7 +25,7 @@ fn main() -> Result<()> {
         }
     }
 
-    let ip_config = Path::new("/data/pppoe.ip_config");
+    let ip_config = Path::new(rsdsl_ip_config::LOCATION);
     while !ip_config.exists() {
         println!("[netlinkd] waiting for PPPoE connection");
         thread::sleep(Duration::from_secs(8));
@@ -70,7 +70,7 @@ fn configure_wan() {
 fn configure_rsppp0() -> Result<()> {
     link::up("rsppp0".into())?;
 
-    let mut file = File::open("/data/pppoe.ip_config")?;
+    let mut file = File::open(rsdsl_ip_config::LOCATION)?;
     let ip_config: IpConfig = serde_json::from_reader(&mut file)?;
 
     addr::flush("rsppp0".into())?;
