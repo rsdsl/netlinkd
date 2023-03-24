@@ -63,3 +63,26 @@ async fn do_is_up(link: String) -> Result<bool> {
 pub fn is_up(link: String) -> Result<bool> {
     Runtime::new()?.block_on(do_is_up(link))
 }
+
+async fn do_set_mtu(link: String, mtu: u32) -> Result<()> {
+    let (conn, handle, _) = rtnetlink::new_connection()?;
+    tokio::spawn(conn);
+
+    let link = handle
+        .link()
+        .get()
+        .match_name(link.clone())
+        .execute()
+        .try_next()
+        .await?
+        .ok_or(Error::LinkNotFound(link))?;
+
+    let id = link.header.index;
+
+    handle.link().set(id).mtu(mtu).execute().await?;
+    Ok(())
+}
+
+pub fn set_mtu(link: String, mtu: u32) -> Result<()> {
+    Runtime::new()?.block_on(do_set_mtu(link, mtu))
+}
