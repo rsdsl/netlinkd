@@ -27,7 +27,7 @@ fn main() -> Result<()> {
 
     let ip_config = Path::new(rsdsl_ip_config::LOCATION);
     while !ip_config.exists() {
-        println!("[netlinkd] waiting for PPPoE connection");
+        println!("[netlinkd] wait for pppoe");
         thread::sleep(Duration::from_secs(8));
     }
 
@@ -62,7 +62,7 @@ fn configure_eth0() -> Result<()> {
 
 fn configure_wan() {
     match configure_rsppp0() {
-        Ok(_) => println!("[netlinkd] configure rsppp0 with PPPoE data"),
+        Ok(_) => println!("[netlinkd] configure rsppp0 with pppoe data"),
         Err(e) => println!("[netlinkd] can't configure rsppp0: {:?}", e),
     }
 }
