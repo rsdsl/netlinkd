@@ -1,5 +1,8 @@
 use crate::error::{Error, Result};
 
+use std::thread;
+use std::time::Duration;
+
 use futures_util::TryStreamExt;
 use netlink_packet_route::rtnl::IFF_UP;
 use tokio::runtime::Runtime;
@@ -114,4 +117,21 @@ async fn do_add_vlan(link: String, parent: String, vlan_id: u16) -> Result<()> {
 
 pub fn add_vlan(link: String, parent: String, vlan_id: u16) -> Result<()> {
     Runtime::new()?.block_on(do_add_vlan(link, parent, vlan_id))
+}
+
+pub fn wait(link: String) -> Result<()> {
+    while !match is_up(link.clone()) {
+        Ok(v) => v,
+        Err(e) => {
+            if let Error::LinkNotFound(_) = e {
+                false
+            } else {
+                return Err(e);
+            }
+        }
+    } {
+        thread::sleep(Duration::from_secs(1));
+    }
+
+    Ok(())
 }
