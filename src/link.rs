@@ -86,3 +86,32 @@ async fn do_set_mtu(link: String, mtu: u32) -> Result<()> {
 pub fn set_mtu(link: String, mtu: u32) -> Result<()> {
     Runtime::new()?.block_on(do_set_mtu(link, mtu))
 }
+
+async fn do_add_vlan(link: String, parent: String, vlan_id: u16) -> Result<()> {
+    let (conn, handle, _) = rtnetlink::new_connection()?;
+    tokio::spawn(conn);
+
+    let parent = handle
+        .link()
+        .get()
+        .match_name(parent.clone())
+        .execute()
+        .try_next()
+        .await?
+        .ok_or(Error::LinkNotFound(parent))?;
+
+    let parent_id = parent.header.index;
+
+    handle
+        .link()
+        .add()
+        .vlan(link, parent_id, vlan_id)
+        .execute()
+        .await?;
+
+    Ok(())
+}
+
+pub fn add_vlan(link: String, parent: String, vlan_id: u16) -> Result<()> {
+    Runtime::new()?.block_on(do_add_vlan(link, parent, vlan_id))
+}

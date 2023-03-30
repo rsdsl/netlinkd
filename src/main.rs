@@ -20,7 +20,15 @@ fn main() -> Result<()> {
     match configure_eth0() {
         Ok(_) => println!("[netlinkd] configure eth0 statically (10.128.0.254/24)"),
         Err(e) => {
-            println!("[netlinkd] can't configure eth0: {:?}", e);
+            println!("[netlinkd] can't configure eth0: {}", e);
+            return Err(e);
+        }
+    }
+
+    match setup_vlans("eth0") {
+        Ok(_) => println!("[netlinkd] setup vlans"),
+        Err(e) => {
+            println!("[netlinkd] can't setup vlans: {}", e);
             return Err(e);
         }
     }
@@ -56,6 +64,24 @@ fn main() -> Result<()> {
 fn configure_eth0() -> Result<()> {
     addr::flush("eth0".into())?;
     addr::add("eth0".into(), "10.128.0.254".parse()?, 24)?;
+
+    Ok(())
+}
+
+fn setup_vlans(base: &str) -> Result<()> {
+    let zones = ["trusted", "untrusted", "isolated", "exposed"];
+
+    for (i, zone) in zones.iter().enumerate() {
+        let vlan_id = 10 * (i + 1);
+        let vlan_name = format!("{}.{}", base, vlan_id);
+        let vlan_addr = IpAddr::V4(Ipv4Addr::new(10, 128, vlan_id as u8, 254));
+
+        link::add_vlan(vlan_name.clone(), base.to_owned(), vlan_id as u16)?;
+        addr::add(vlan_name.clone(), vlan_addr, 24)?;
+        link::up(vlan_name.clone())?;
+
+        println!("[netlinkd] configure {} zone {}", vlan_name, zone);
+    }
 
     Ok(())
 }
