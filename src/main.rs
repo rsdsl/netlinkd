@@ -80,7 +80,10 @@ fn setup_vlans(base: &str) -> Result<()> {
         addr::add(vlan_name.clone(), vlan_addr, 24)?;
         link::up(vlan_name.clone())?;
 
-        println!("[netlinkd] configure {} zone {}", vlan_name, zone);
+        println!(
+            "[netlinkd] configure {} ({}/24) zone {}",
+            vlan_name, vlan_addr, zone
+        );
     }
 
     Ok(())
