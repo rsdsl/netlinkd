@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use futures_util::TryStreamExt;
 use netlink_packet_route::rtnl::IFF_UP;
+use rtnetlink::Error::NetlinkError;
 use tokio::runtime::Runtime;
 
 #[derive(Clone, Copy, Debug)]
@@ -125,6 +126,13 @@ pub fn wait(link: String) -> Result<()> {
         Err(e) => {
             if let Error::LinkNotFound(_) = e {
                 false
+            } else if let Error::RtNetlink(NetlinkError(ref msg)) = e {
+                // Error -19 is "No such device".
+                if msg.code == -19 {
+                    false
+                } else {
+                    return Err(e);
+                }
             } else {
                 return Err(e);
             }
