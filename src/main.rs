@@ -12,8 +12,6 @@ use notify::{Event, EventKind, RecursiveMode, Watcher};
 use rsdsl_ip_config::IpConfig;
 
 fn main() -> Result<()> {
-    fs::write("/proc/sys/net/ipv4/ip_forward", "1")?;
-
     link::up("eth0".into())?;
 
     match configure_eth0() {
@@ -31,6 +29,8 @@ fn main() -> Result<()> {
             return Err(e);
         }
     }
+
+    fs::write("/proc/sys/net/ipv4/ip_forward", "1")?;
 
     link::up("eth1".into())?;
 
