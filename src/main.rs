@@ -15,7 +15,6 @@ fn main() -> Result<()> {
     fs::write("/proc/sys/net/ipv4/ip_forward", "1")?;
 
     link::up("eth0".into())?;
-    link::up("eth1".into())?;
 
     match configure_eth0() {
         Ok(_) => println!("[netlinkd] configure eth0 statically (10.128.0.254/24)"),
@@ -32,6 +31,8 @@ fn main() -> Result<()> {
             return Err(e);
         }
     }
+
+    link::up("eth1".into())?;
 
     let ip_config = Path::new(rsdsl_ip_config::LOCATION);
     while !ip_config.exists() {
