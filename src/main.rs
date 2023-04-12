@@ -12,6 +12,10 @@ use notify::{Event, EventKind, RecursiveMode, Watcher};
 use rsdsl_ip_config::IpConfig;
 
 fn main() -> Result<()> {
+    println!("[netlinkd] wait for eth0");
+    link::wait_exists("eth0".into())?;
+    println!("[netlinkd] detect eth0");
+
     link::up("eth0".into())?;
 
     match configure_eth0() {
@@ -31,6 +35,11 @@ fn main() -> Result<()> {
     }
 
     fs::write("/proc/sys/net/ipv4/ip_forward", "1")?;
+    println!("[netlinkd] enable ipv4 routing");
+
+    println!("[netlinkd] wait for eth1");
+    link::wait_exists("eth1".into())?;
+    println!("[netlinkd] detect eth1");
 
     link::up("eth1".into())?;
 
