@@ -120,7 +120,7 @@ pub fn add_vlan(link: String, parent: String, vlan_id: u16) -> Result<()> {
     Runtime::new()?.block_on(do_add_vlan(link, parent, vlan_id))
 }
 
-pub fn wait(link: String) -> Result<()> {
+pub fn wait_up(link: String) -> Result<()> {
     while !match is_up(link.clone()) {
         Ok(v) => v,
         Err(e) => {
@@ -138,6 +138,34 @@ pub fn wait(link: String) -> Result<()> {
             }
         }
     } {
+        thread::sleep(Duration::from_secs(1));
+    }
+
+    Ok(())
+}
+
+async fn do_exists(link: String) -> Result<bool> {
+    let (conn, handle, _) = rtnetlink::new_connection()?;
+    tokio::spawn(conn);
+
+    let exists = handle
+        .link()
+        .get()
+        .match_name(link)
+        .execute()
+        .try_next()
+        .await
+        .is_ok();
+
+    Ok(exists)
+}
+
+pub fn exists(link: String) -> Result<bool> {
+    Runtime::new()?.block_on(do_exists(link))
+}
+
+pub fn wait_exists(link: String) -> Result<()> {
+    while !exists(link.clone())? {
         thread::sleep(Duration::from_secs(1));
     }
 
