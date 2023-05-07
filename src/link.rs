@@ -171,3 +171,23 @@ pub fn wait_exists(link: String) -> Result<()> {
 
     Ok(())
 }
+
+async fn do_index(link: String) -> Result<u32> {
+    let (conn, handle, _) = rtnetlink::new_connection()?;
+    tokio::spawn(conn);
+
+    let link = handle
+        .link()
+        .get()
+        .match_name(link.clone())
+        .execute()
+        .try_next()
+        .await?
+        .ok_or(Error::LinkNotFound(link))?;
+
+    Ok(link.header.index)
+}
+
+pub fn index(link: String) -> Result<u32> {
+    Runtime::new()?.block_on(do_index(link))
+}
