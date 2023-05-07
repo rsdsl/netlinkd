@@ -4,6 +4,7 @@ use std::net::IpAddr;
 
 use futures_util::TryStreamExt;
 use netlink_packet_route::rtnl::AddressMessage;
+use netlink_packet_route::RT_SCOPE_LINK;
 use tokio::runtime::Runtime;
 
 async fn do_flush(link: String) -> Result<()> {
@@ -62,4 +63,31 @@ async fn do_add(link: String, addr: IpAddr, prefix_len: u8) -> Result<()> {
 
 pub fn add(link: String, addr: IpAddr, prefix_len: u8) -> Result<()> {
     Runtime::new()?.block_on(do_add(link, addr, prefix_len))
+}
+
+async fn do_add_link_local(link: String, addr: IpAddr, prefix_len: u8) -> Result<()> {
+    let (conn, handle, _) = rtnetlink::new_connection()?;
+    tokio::spawn(conn);
+
+    let link = handle
+        .link()
+        .get()
+        .match_name(link.clone())
+        .execute()
+        .try_next()
+        .await?
+        .ok_or(Error::LinkNotFound(link))?;
+
+    let id = link.header.index;
+
+    let mut req = handle.address().add(id, addr, prefix_len);
+    req.message_mut().header.scope = RT_SCOPE_LINK;
+
+    req.execute().await?;
+
+    Ok(())
+}
+
+pub fn add_link_local(link: String, addr: IpAddr, prefix_len: u8) -> Result<()> {
+    Runtime::new()?.block_on(do_add_link_local(link, addr, prefix_len))
 }
