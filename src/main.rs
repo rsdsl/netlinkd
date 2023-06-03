@@ -12,40 +12,40 @@ use notify::{Event, EventKind, RecursiveMode, Watcher};
 use rsdsl_ip_config::IpConfig;
 
 fn main() -> Result<()> {
-    println!("[netlinkd] wait for eth0");
+    println!("wait for eth0");
     link::wait_exists("eth0".into())?;
-    println!("[netlinkd] detect eth0");
+    println!("detect eth0");
 
     link::up("eth0".into())?;
 
     match configure_eth0() {
-        Ok(_) => println!("[netlinkd] configure eth0 statically (10.128.0.254/24)"),
+        Ok(_) => println!("configure eth0 statically (10.128.0.254/24)"),
         Err(e) => {
-            println!("[netlinkd] can't configure eth0: {}", e);
+            println!("can't configure eth0: {}", e);
             return Err(e);
         }
     }
 
     match setup_vlans("eth0") {
-        Ok(_) => println!("[netlinkd] setup vlans"),
+        Ok(_) => println!("setup vlans"),
         Err(e) => {
-            println!("[netlinkd] can't setup vlans: {}", e);
+            println!("can't setup vlans: {}", e);
             return Err(e);
         }
     }
 
     fs::write("/proc/sys/net/ipv4/ip_forward", "1")?;
-    println!("[netlinkd] enable ipv4 routing");
+    println!("enable ipv4 routing");
 
-    println!("[netlinkd] wait for eth1");
+    println!("wait for eth1");
     link::wait_exists("eth1".into())?;
-    println!("[netlinkd] detect eth1");
+    println!("detect eth1");
 
     link::up("eth1".into())?;
 
     let ip_config = Path::new(rsdsl_ip_config::LOCATION);
     while !ip_config.exists() {
-        println!("[netlinkd] wait for pppoe");
+        println!("wait for pppoe");
         thread::sleep(Duration::from_secs(8));
     }
 
@@ -61,7 +61,7 @@ fn main() -> Result<()> {
             }
             _ => {}
         },
-        Err(e) => println!("[netlinkd] watch error: {:?}", e),
+        Err(e) => println!("watch error: {:?}", e),
     })?;
 
     watcher.watch(ip_config, RecursiveMode::NonRecursive)?;
@@ -90,10 +90,7 @@ fn setup_vlans(base: &str) -> Result<()> {
         addr::add(vlan_name.clone(), vlan_addr, 24)?;
         link::up(vlan_name.clone())?;
 
-        println!(
-            "[netlinkd] configure {} ({}/24) zone {}",
-            vlan_name, vlan_addr, zone
-        );
+        println!("configure {} ({}/24) zone {}", vlan_name, vlan_addr, zone);
     }
 
     Ok(())
@@ -101,8 +98,8 @@ fn setup_vlans(base: &str) -> Result<()> {
 
 fn configure_wan() {
     match configure_rsppp0() {
-        Ok(_) => println!("[netlinkd] configure rsppp0 with pppoe data"),
-        Err(e) => println!("[netlinkd] can't configure rsppp0: {:?}", e),
+        Ok(_) => println!("configure rsppp0 with pppoe data"),
+        Err(e) => println!("can't configure rsppp0: {:?}", e),
     }
 }
 
