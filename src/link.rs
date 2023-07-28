@@ -1,5 +1,6 @@
 use crate::error::{Error, Result};
 
+use std::num::NonZeroI32;
 use std::thread;
 use std::time::Duration;
 
@@ -128,7 +129,7 @@ pub fn wait_up(link: String) -> Result<()> {
                 false
             } else if let Error::RtNetlink(NetlinkError(ref msg)) = e {
                 // Error -19 is "No such device".
-                if msg.code == -19 {
+                if msg.code == NonZeroI32::new(-19) {
                     false
                 } else {
                     return Err(e);
