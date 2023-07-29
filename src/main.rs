@@ -2,14 +2,14 @@ use rsdsl_netlinkd::error::Result;
 use rsdsl_netlinkd::{addr, link, route};
 
 use std::fs::{self, File};
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::path::Path;
 use std::thread;
 use std::time::Duration;
 
 use notify::event::{CreateKind, ModifyKind};
 use notify::{Event, EventKind, RecursiveMode, Watcher};
-use rsdsl_ip_config::IpConfig;
+use rsdsl_ip_config::DsConfig;
 
 fn main() -> Result<()> {
     println!("wait for eth0");
@@ -97,32 +97,30 @@ fn setup_vlans(base: &str) -> Result<()> {
 }
 
 fn configure_wan() {
-    match configure_rsppp0() {
-        Ok(_) => println!("configure rsppp0 with pppoe data"),
-        Err(e) => println!("can't configure rsppp0: {:?}", e),
+    match configure_ppp0() {
+        Ok(_) => println!("configure ppp0 with pppoe data"),
+        Err(e) => println!("can't configure ppp0: {:?}", e),
     }
 }
 
-fn configure_rsppp0() -> Result<()> {
-    // I've never seen ISPs tunnel IPv6 in PPP and haven't implemented it.
-    fs::write("/proc/sys/net/ipv6/conf/rsppp0/disable_ipv6", "1")?;
-
-    link::set_mtu("rsppp0".into(), 1492)?;
-    link::up("rsppp0".into())?;
+fn configure_ppp0() -> Result<()> {
+    link::set_mtu("ppp0".into(), 1492)?;
+    link::up("ppp0".into())?;
 
     let mut file = File::open(rsdsl_ip_config::LOCATION)?;
-    let ip_config: IpConfig = serde_json::from_reader(&mut file)?;
+    let ip_config: DsConfig = serde_json::from_reader(&mut file)?;
 
-    addr::flush("rsppp0".into())?;
-    addr::add("rsppp0".into(), IpAddr::V4(ip_config.addr), 32)?;
+    addr::flush("ppp0".into())?;
 
-    route::add4(ip_config.rtr, 32, None, "rsppp0".into())?;
-    route::add4(
-        Ipv4Addr::UNSPECIFIED,
-        0,
-        Some(ip_config.rtr),
-        "rsppp0".into(),
-    )?;
+    if let Some(v4) = ip_config.v4 {
+        addr::add("ppp0".into(), IpAddr::V4(v4.addr), 32)?;
+        route::add4(Ipv4Addr::UNSPECIFIED, 0, None, "ppp0".into())?;
+    }
+
+    if let Some(v6) = ip_config.v6 {
+        addr::add("ppp0".into(), IpAddr::V6(v6.laddr), 64)?;
+        route::add6(Ipv6Addr::UNSPECIFIED, 0, None, "ppp0".into())?;
+    }
 
     Ok(())
 }

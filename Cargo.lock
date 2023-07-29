@@ -461,15 +461,15 @@ dependencies = [
 
 [[package]]
 name = "rsdsl_ip_config"
-version = "0.1.0"
-source = "git+https://github.com/rsdsl/ip_config.git#e13adb9cc9367ad93f1e947335b0d56108015999"
+version = "0.2.1"
+source = "git+https://github.com/rsdsl/ip_config.git#26c15096a1f4b69c6c06b5373b507c9dbbfc54c5"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "rsdsl_netlinkd"
-version = "0.3.2"
+version = "0.4.0"
 dependencies = [
  "futures-util",
  "netlink-packet-route",
