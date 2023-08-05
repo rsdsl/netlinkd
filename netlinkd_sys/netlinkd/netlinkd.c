@@ -53,7 +53,7 @@ int netlinkd_create_6in4(
 
 	struct ifreq ifr;
 
-	strcpy(ifr.ifr_name, "tunl0");
+	strcpy(ifr.ifr_name, "sit0");
 	ifr.ifr_ifru.ifru_data = (char *) &p;
 
 	int fd;
