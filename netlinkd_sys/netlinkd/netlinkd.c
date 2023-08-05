@@ -92,7 +92,7 @@ int netlinkd_create_4in6(
 
 	struct ifreq ifr;
 
-	strcpy(ifr.ifr_name, "ip6tunl0");
+	strcpy(ifr.ifr_name, "ip6tnl0");
 	ifr.ifr_ifru.ifru_data = (char *) &p;
 
 	int fd;
