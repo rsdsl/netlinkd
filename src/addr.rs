@@ -4,7 +4,7 @@ use std::net::IpAddr;
 
 use futures::future;
 use futures_util::TryStreamExt;
-use netlink_packet_route::{AddressMessage, AF_INET6, RT_SCOPE_LINK, RT_SCOPE_UNIVERSE};
+use netlink_packet_route::{AddressMessage, AF_INET, AF_INET6, RT_SCOPE_LINK, RT_SCOPE_UNIVERSE};
 use tokio::runtime::Runtime;
 
 async fn do_flush(link: String) -> Result<()> {
@@ -39,6 +39,76 @@ async fn do_flush(link: String) -> Result<()> {
 
 pub fn flush(link: String) -> Result<()> {
     Runtime::new()?.block_on(do_flush(link))
+}
+
+async fn do_flush4(link: String) -> Result<()> {
+    let (conn, handle, _) = rtnetlink::new_connection()?;
+    tokio::spawn(conn);
+
+    let link = handle
+        .link()
+        .get()
+        .match_name(link.clone())
+        .execute()
+        .try_next()
+        .await?
+        .ok_or(Error::LinkNotFound(link))?;
+
+    let id = link.header.index;
+
+    let addrs: Vec<AddressMessage> = handle
+        .address()
+        .get()
+        .set_link_index_filter(id)
+        .execute()
+        .try_filter(|addr| future::ready(addr.header.family == AF_INET as u8))
+        .try_collect()
+        .await?;
+
+    for addr in addrs {
+        handle.address().del(addr).execute().await?;
+    }
+
+    Ok(())
+}
+
+pub fn flush4(link: String) -> Result<()> {
+    Runtime::new()?.block_on(do_flush4(link))
+}
+
+async fn do_flush6(link: String) -> Result<()> {
+    let (conn, handle, _) = rtnetlink::new_connection()?;
+    tokio::spawn(conn);
+
+    let link = handle
+        .link()
+        .get()
+        .match_name(link.clone())
+        .execute()
+        .try_next()
+        .await?
+        .ok_or(Error::LinkNotFound(link))?;
+
+    let id = link.header.index;
+
+    let addrs: Vec<AddressMessage> = handle
+        .address()
+        .get()
+        .set_link_index_filter(id)
+        .execute()
+        .try_filter(|addr| future::ready(addr.header.family == AF_INET6 as u8))
+        .try_collect()
+        .await?;
+
+    for addr in addrs {
+        handle.address().del(addr).execute().await?;
+    }
+
+    Ok(())
+}
+
+pub fn flush6(link: String) -> Result<()> {
+    Runtime::new()?.block_on(do_flush6(link))
 }
 
 async fn do_flush6_global() -> Result<()> {

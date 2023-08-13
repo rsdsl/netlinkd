@@ -180,20 +180,20 @@ fn configure_ipv6() {
 }
 
 fn configure_all_v6() -> Result<()> {
-    addr::flush6_global()?;
-
     let mut file = File::open(rsdsl_pd_config::LOCATION)?;
     let pd_config: PdConfig = serde_json::from_reader(&mut file)?;
 
     let prefix = Ipv6Net::new(pd_config.prefix, pd_config.len)?.trunc();
     let mut subnets = prefix.subnets(64)?;
 
+    addr::flush6_global()?;
     addr::add("ppp0".into(), IpAddr::V6(next_ifid1(&mut subnets)?), 64)?;
 
     let addr = next_ifid1(&mut subnets)?;
 
     fs::write("/proc/sys/net/ipv6/conf/eth0/accept_ra", "0")?;
 
+    addr::flush6("eth0".into())?;
     addr::add_link_local("eth0".into(), LINK_LOCAL.into(), 64)?;
     addr::add("eth0".into(), addr.into(), 64)?;
 
@@ -210,6 +210,7 @@ fn configure_all_v6() -> Result<()> {
             "0",
         )?;
 
+        addr::flush6(vlan_name.clone())?;
         addr::add_link_local(vlan_name.clone(), LINK_LOCAL.into(), 64)?;
         addr::add(vlan_name.clone(), vlan_addr.into(), 64)?;
 
