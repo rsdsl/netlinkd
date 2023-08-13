@@ -1,4 +1,4 @@
-use rsdsl_netlinkd::error::Result;
+use rsdsl_netlinkd::error::{Error, Result};
 use rsdsl_netlinkd::{addr, link, route};
 
 use std::fs::{self, File};
@@ -7,9 +7,13 @@ use std::path::Path;
 use std::thread;
 use std::time::Duration;
 
+use ipnet::Ipv6Net;
 use notify::event::{CreateKind, ModifyKind};
 use notify::{Event, EventKind, RecursiveMode, Watcher};
 use rsdsl_ip_config::DsConfig;
+use rsdsl_pd_config::PdConfig;
+
+const LINK_LOCAL: Ipv6Addr = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1);
 
 fn main() -> Result<()> {
     println!("wait for eth0");
@@ -36,6 +40,9 @@ fn main() -> Result<()> {
 
     fs::write("/proc/sys/net/ipv4/ip_forward", "1")?;
     println!("enable ipv4 routing");
+
+    fs::write("/proc/sys/net/ipv6/conf/all/forwarding", "1")?;
+    println!("enable ipv6 routing");
 
     println!("wait for eth1");
     link::wait_exists("eth1".into())?;
@@ -73,6 +80,30 @@ fn main() -> Result<()> {
     })?;
 
     watcher.watch(ip_config, RecursiveMode::NonRecursive)?;
+
+    let pd_config = Path::new(rsdsl_pd_config::LOCATION);
+
+    println!("wait for dhcp6");
+    while !pd_config.exists() {
+        thread::sleep(Duration::from_secs(8));
+    }
+
+    configure_ipv6();
+
+    let mut watcher = notify::recommended_watcher(|res: notify::Result<Event>| match res {
+        Ok(event) => match event.kind {
+            EventKind::Create(kind) if kind == CreateKind::File => {
+                configure_ipv6();
+            }
+            EventKind::Modify(kind) if matches!(kind, ModifyKind::Data(_)) => {
+                configure_ipv6();
+            }
+            _ => {}
+        },
+        Err(e) => println!("watch error: {:?}", e),
+    })?;
+
+    watcher.watch(pd_config, RecursiveMode::NonRecursive)?;
 
     loop {
         thread::sleep(Duration::MAX)
@@ -138,4 +169,53 @@ fn configure_ppp0() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn configure_ipv6() {
+    match configure_all_v6() {
+        Ok(_) => println!("configure ipv6"),
+        Err(e) => println!("can't configure ipv6: {:?}", e),
+    }
+}
+
+fn configure_all_v6() -> Result<()> {
+    let mut file = File::open(rsdsl_pd_config::LOCATION)?;
+    let pd_config: PdConfig = serde_json::from_reader(&mut file)?;
+
+    let prefix = Ipv6Net::new(pd_config.prefix, pd_config.len)?.trunc();
+    let mut subnets = prefix.subnets(64)?;
+
+    addr::add("ppp0".into(), IpAddr::V6(next_ifid1(&mut subnets)?), 64)?;
+
+    let addr = next_ifid1(&mut subnets)?;
+
+    fs::write("/proc/sys/net/ipv6/conf/eth0/accept_ra", "0")?;
+
+    addr::add_link_local("eth0".into(), LINK_LOCAL.into(), 64)?;
+    addr::add("eth0".into(), addr.into(), 64)?;
+
+    println!("configure eth0 ({}/64)", addr);
+
+    let zones = ["trusted", "untrusted", "isolated", "exposed"];
+    for (i, zone) in zones.iter().enumerate() {
+        let vlan_id = 10 * (i + 1);
+        let vlan_name = format!("eth0.{}", vlan_id);
+        let vlan_addr = next_ifid1(&mut subnets)?;
+
+        fs::write(
+            format!("/proc/sys/net/ipv6/conf/{}/accept_ra", vlan_name),
+            "0",
+        )?;
+
+        addr::add_link_local(vlan_name.clone(), LINK_LOCAL.into(), 64)?;
+        addr::add(vlan_name.clone(), vlan_addr.into(), 64)?;
+
+        println!("configure {} ({}/64) zone {}", vlan_name, vlan_addr, zone);
+    }
+
+    Ok(())
+}
+
+fn next_ifid1<T: Iterator<Item = Ipv6Net>>(subnets: &mut T) -> Result<Ipv6Addr> {
+    Ok((u128::from(subnets.next().ok_or(Error::NotEnoughIpv6Subnets)?.addr()) + 1).into())
 }
