@@ -2,9 +2,9 @@ use crate::error::{Error, Result};
 
 use std::net::IpAddr;
 
+use futures::future;
 use futures_util::TryStreamExt;
-use netlink_packet_route::rtnl::AddressMessage;
-use netlink_packet_route::RT_SCOPE_LINK;
+use netlink_packet_route::{AddressMessage, AF_INET6, RT_SCOPE_LINK, RT_SCOPE_UNIVERSE};
 use tokio::runtime::Runtime;
 
 async fn do_flush(link: String) -> Result<()> {
@@ -39,6 +39,33 @@ async fn do_flush(link: String) -> Result<()> {
 
 pub fn flush(link: String) -> Result<()> {
     Runtime::new()?.block_on(do_flush(link))
+}
+
+async fn do_flush6_global() -> Result<()> {
+    let (conn, handle, _) = rtnetlink::new_connection()?;
+    tokio::spawn(conn);
+
+    let addrs: Vec<AddressMessage> = handle
+        .address()
+        .get()
+        .execute()
+        .try_filter(|addr| {
+            future::ready(
+                addr.header.family == AF_INET6 as u8 && addr.header.scope == RT_SCOPE_UNIVERSE,
+            )
+        })
+        .try_collect()
+        .await?;
+
+    for addr in addrs {
+        handle.address().del(addr).execute().await?;
+    }
+
+    Ok(())
+}
+
+pub fn flush6_global() -> Result<()> {
+    Runtime::new()?.block_on(do_flush6_global())
 }
 
 async fn do_add(link: String, addr: IpAddr, prefix_len: u8) -> Result<()> {

@@ -475,8 +475,9 @@ dependencies = [
 
 [[package]]
 name = "rsdsl_netlinkd"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
+ "futures",
  "futures-util",
  "ipnet",
  "netlink-packet-route",

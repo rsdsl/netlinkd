@@ -157,6 +157,7 @@ fn configure_ppp0() -> Result<()> {
     let ip_config: DsConfig = serde_json::from_reader(&mut file)?;
 
     addr::flush("ppp0".into())?;
+    route::flush("ppp0".into())?;
 
     if let Some(v4) = ip_config.v4 {
         addr::add("ppp0".into(), IpAddr::V4(v4.addr), 32)?;
@@ -179,6 +180,8 @@ fn configure_ipv6() {
 }
 
 fn configure_all_v6() -> Result<()> {
+    addr::flush6_global()?;
+
     let mut file = File::open(rsdsl_pd_config::LOCATION)?;
     let pd_config: PdConfig = serde_json::from_reader(&mut file)?;
 
