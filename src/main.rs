@@ -43,6 +43,14 @@ fn main() -> Result<()> {
 
     link::up("eth1".into())?;
 
+    match enable_modem_access() {
+        Ok(_) => println!("configure eth1 modem (192.168.1.2/24)"),
+        Err(e) => {
+            println!("can't configure eth1 modem: {}", e);
+            return Err(e);
+        }
+    }
+
     let ip_config = Path::new(rsdsl_ip_config::LOCATION);
     while !ip_config.exists() {
         println!("wait for pppoe");
@@ -92,6 +100,13 @@ fn setup_vlans(base: &str) -> Result<()> {
 
         println!("configure {} ({}/24) zone {}", vlan_name, vlan_addr, zone);
     }
+
+    Ok(())
+}
+
+fn enable_modem_access() -> Result<()> {
+    addr::flush("eth1".into())?;
+    addr::add("eth1".into(), "192.168.1.2".parse()?, 24)?;
 
     Ok(())
 }
