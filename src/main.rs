@@ -181,9 +181,9 @@ fn configure_ipv6() {
 
 fn configure_all_v6() -> Result<()> {
     let mut file = File::open(rsdsl_pd_config::LOCATION)?;
-    let pd_config: PdConfig = serde_json::from_reader(&mut file)?;
+    let pdconfig: PdConfig = serde_json::from_reader(&mut file)?;
 
-    let prefix = Ipv6Net::new(pd_config.prefix, pd_config.len)?.trunc();
+    let prefix = Ipv6Net::new(pdconfig.prefix, pdconfig.len)?.trunc();
     let mut subnets = prefix.subnets(64)?;
 
     addr::flush6_global()?;
