@@ -72,11 +72,18 @@ impl IpIp6 {
         let tnlname = CString::new(name)?.into_raw();
         let ifmaster = CString::new(master)?.into_raw();
 
+        let mut loctets = laddr.octets();
+
+        loctets.swap(0, 12);
+        loctets.swap(1, 13);
+        loctets.swap(2, 14);
+        loctets.swap(3, 15);
+
         let err = unsafe {
             internal::netlinkd_create_4in6(
                 tnlname,
                 ifmaster,
-                &laddr.octets() as *const u8,
+                &loctets as *const u8,
                 &raddr.octets() as *const u8,
             )
         };
