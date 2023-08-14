@@ -77,6 +77,7 @@ int netlinkd_create_4in6(
 )
 {
 	struct ip_tunnel_parm p;
+	__attribute__((unused)) unsigned long _addrbuf;
 
 	strcpy(p.name, tnlname);
 	p.iph.version = 0;
