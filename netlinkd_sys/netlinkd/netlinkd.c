@@ -105,5 +105,6 @@ int netlinkd_create_4in6(
 	}
 
 	close(fd);
+	free(p);
 	return 0;
 }
