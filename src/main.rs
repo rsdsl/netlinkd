@@ -44,6 +44,20 @@ fn main() -> Result<()> {
     fs::write("/proc/sys/net/ipv6/conf/all/forwarding", "1")?;
     println!("enable ipv6 routing");
 
+    println!("wait for eth1");
+    link::wait_exists("eth1".into())?;
+    println!("detect eth1");
+
+    link::up("eth1".into())?;
+
+    match enable_modem_access() {
+        Ok(_) => println!("configure eth1 modem (192.168.1.2/24)"),
+        Err(e) => {
+            println!("can't configure eth1 modem: {}", e);
+            return Err(e);
+        }
+    }
+
     let ip_config = Path::new(rsdsl_ip_config::LOCATION);
     while !ip_config.exists() {
         println!("wait for pppoe");
