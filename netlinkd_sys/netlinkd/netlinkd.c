@@ -80,7 +80,7 @@ int netlinkd_create_4in6(
 	struct ip_tunnel_parm *p = malloc(sizeof *p + 8);
 
 	strcpy(p->name, tnlname);
-	p->iph.version = 0;
+	p->iph.version = 2;
 	p->iph.ihl = 0;
 	p->iph.protocol = IPPROTO_IP;
 	memcpy(&p->iph.saddr, saddr, 16);
