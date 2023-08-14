@@ -1,6 +1,7 @@
 #include <net/if.h>
 #include <netinet/in.h>
 #include <linux/if_tunnel.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -76,25 +77,24 @@ int netlinkd_create_4in6(
 	const unsigned char daddr[16]
 )
 {
-	__attribute__((unused)) volatile unsigned long _addrbuf;
-	struct ip_tunnel_parm p;
+	struct ip_tunnel_parm *p = malloc(sizeof *p + 8);
 
-	strcpy(p.name, tnlname);
-	p.iph.version = 0;
-	p.iph.ihl = 0;
-	p.iph.protocol = IPPROTO_IP;
-	memcpy(&p.iph.saddr, saddr, 16);
-	memcpy(&p.iph.daddr, daddr, 16);
-	p.link = if_nametoindex(ifmaster);
+	strcpy(p->name, tnlname);
+	p->iph.version = 0;
+	p->iph.ihl = 0;
+	p->iph.protocol = IPPROTO_IP;
+	memcpy(&p->iph.saddr, saddr, 16);
+	memcpy(&p->iph.daddr, daddr, 16);
+	p->link = if_nametoindex(ifmaster);
 
-	if (!p.link) {
+	if (!p->link) {
 		return -1;
 	}
 
 	struct ifreq ifr;
 
 	strcpy(ifr.ifr_name, "ip6tnl0");
-	ifr.ifr_ifru.ifru_data = (char *) &p;
+	ifr.ifr_ifru.ifru_data = (char *) p;
 
 	int fd;
 	if ((fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP)) < 0) {

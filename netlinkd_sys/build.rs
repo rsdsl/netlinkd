@@ -5,7 +5,6 @@ fn main() {
     println!("cargo:rerun-if-changed=netlinkd/netlinkd.c");
 
     cc::Build::new()
-        .flag("-Wno-stringop-overflow")
         .file("netlinkd/netlinkd.c")
         .compile("netlinkd");
 
