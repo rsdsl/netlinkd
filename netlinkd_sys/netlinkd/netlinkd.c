@@ -79,11 +79,11 @@ int netlinkd_create_4in6(
 	struct ip_tunnel_parm p;
 
 	strcpy(p.name, tnlname);
-	p.iph.version = 2;
+	p.iph.version = 0;
 	p.iph.ihl = 0;
 	p.iph.protocol = IPPROTO_IP;
-	p.iph.saddr = saddr[0];
-	p.iph.daddr = daddr[0];
+	memcpy(&p.iph.saddr, saddr, 16);
+	memcpy(&p.iph.daddr, daddr, 16);
 	p.link = if_nametoindex(ifmaster);
 
 	if (!p.link) {
