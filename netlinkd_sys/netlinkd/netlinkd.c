@@ -43,6 +43,7 @@ int netlinkd_create_6in4(
 	strcpy(p.name, tnlname);
 	p.iph.version = 4;
 	p.iph.ihl = 5;
+	p.iph.ttl = 64;
 	p.iph.protocol = IPPROTO_IPV6;
 	p.iph.saddr = saddr;
 	p.iph.daddr = daddr;
