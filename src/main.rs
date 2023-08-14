@@ -23,7 +23,7 @@ fn main() -> Result<()> {
     link::up("eth0".into())?;
 
     match configure_eth0() {
-        Ok(_) => println!("configure eth0 statically (10.128.0.254/24)"),
+        Ok(_) => println!("configure eth0 statically (10.128.0.254/24, fe80::1/64)"),
         Err(e) => {
             println!("can't configure eth0: {}", e);
             return Err(e);
@@ -112,6 +112,7 @@ fn main() -> Result<()> {
 
 fn configure_eth0() -> Result<()> {
     addr::flush("eth0".into())?;
+    addr::add_link_local("eth0".into(), LINK_LOCAL.into(), 64)?;
     addr::add("eth0".into(), "10.128.0.254".parse()?, 24)?;
 
     Ok(())
@@ -126,10 +127,16 @@ fn setup_vlans(base: &str) -> Result<()> {
         let vlan_addr = IpAddr::V4(Ipv4Addr::new(10, 128, vlan_id as u8, 254));
 
         link::add_vlan(vlan_name.clone(), base.to_owned(), vlan_id as u16)?;
+
+        addr::add_link_local(vlan_name.clone(), LINK_LOCAL.into(), 64)?;
         addr::add(vlan_name.clone(), vlan_addr, 24)?;
+
         link::up(vlan_name.clone())?;
 
-        println!("configure {} ({}/24) zone {}", vlan_name, vlan_addr, zone);
+        println!(
+            "configure {} ({}/24, fe80::1/64) zone {}",
+            vlan_name, vlan_addr, zone
+        );
     }
 
     Ok(())
@@ -194,7 +201,6 @@ fn configure_all_v6() -> Result<()> {
     fs::write("/proc/sys/net/ipv6/conf/eth0/accept_ra", "0")?;
 
     addr::flush6("eth0".into())?;
-    addr::add_link_local("eth0".into(), LINK_LOCAL.into(), 64)?;
     addr::add("eth0".into(), addr.into(), 64)?;
 
     println!("configure eth0 ({}/64)", addr);
@@ -211,7 +217,6 @@ fn configure_all_v6() -> Result<()> {
         )?;
 
         addr::flush6(vlan_name.clone())?;
-        addr::add_link_local(vlan_name.clone(), LINK_LOCAL.into(), 64)?;
         addr::add(vlan_name.clone(), vlan_addr.into(), 64)?;
 
         println!("configure {} ({}/64) zone {}", vlan_name, vlan_addr, zone);
