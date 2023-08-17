@@ -201,6 +201,7 @@ fn configure_all_v6() -> Result<()> {
     fs::write("/proc/sys/net/ipv6/conf/eth0/accept_ra", "0")?;
 
     addr::flush6("eth0".into())?;
+    addr::add_link_local("eth0".into(), LINK_LOCAL.into(), 64)?;
     addr::add("eth0".into(), addr.into(), 64)?;
 
     println!("configure eth0 ({}/64)", addr);
@@ -217,6 +218,7 @@ fn configure_all_v6() -> Result<()> {
         )?;
 
         addr::flush6(vlan_name.clone())?;
+        addr::add(vlan_name.clone(), LINK_LOCAL.into(), 64)?;
         addr::add(vlan_name.clone(), vlan_addr.into(), 64)?;
 
         println!("configure {} ({}/64) zone {}", vlan_name, vlan_addr, zone);
