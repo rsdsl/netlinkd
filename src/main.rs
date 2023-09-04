@@ -42,6 +42,7 @@ fn main() -> Result<()> {
     println!("enable ipv4 routing");
 
     fs::write("/proc/sys/net/ipv6/conf/all/forwarding", "1")?;
+    fs::write("/proc/sys/net/ipv6/conf/default/forwarding", "1")?;
     println!("enable ipv6 routing");
 
     println!("wait for eth1");
