@@ -116,11 +116,15 @@ fn configure_wan() -> Result<()> {
         if let Some(v4) = ds_config.v4 {
             addr::add("ppp0".to_string(), v4.addr.into(), 32)?;
             route::add4(Ipv4Addr::UNSPECIFIED, 0, None, "ppp0".to_string())?;
+
+            println!("[info] config ppp0 {}/32", v4.addr);
         }
 
         if let Some(v6) = ds_config.v6 {
             addr::add_link_local("ppp0".to_string(), v6.laddr.into(), 64)?;
             route::add6(Ipv6Addr::UNSPECIFIED, 0, None, "ppp0".to_string())?;
+
+            println!("[info] config ppp0 ll {}/64", v6.laddr);
 
             if let Some(pd_config) = read_pd_config_optional() {
                 let prefix = Ipv6Net::new(pd_config.prefix, pd_config.len)?.trunc();
