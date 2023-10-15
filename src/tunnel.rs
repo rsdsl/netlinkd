@@ -66,6 +66,10 @@ impl Sit {
             return Err(io::Error::last_os_error().into());
         }
 
+        // Errors are safe to ignore because they don't affect tunnel creation
+        // but do leave the program in an inconsistent state.
+        libc::close(fd);
+
         Ok(Self {
             name: name.to_owned(),
         })
@@ -128,6 +132,10 @@ impl IpIp6 {
         if libc::ioctl(fd, SIOCADDTUNNEL, &ifr) < 0 {
             return Err(io::Error::last_os_error().into());
         }
+
+        // Errors are safe to ignore because they don't affect tunnel creation
+        // but do leave the program in an inconsistent state.
+        libc::close(fd);
 
         Ok(Self {
             name: name.to_owned(),
