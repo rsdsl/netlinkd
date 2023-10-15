@@ -121,6 +121,11 @@ fn configure_wan() -> Result<()> {
         if let Some(v6) = ds_config.v6 {
             addr::add("ppp0".to_string(), v6.laddr.into(), 64)?;
             route::add6(Ipv6Addr::UNSPECIFIED, 0, None, "ppp0".to_string())?;
+
+            if let Some(pd_config) = read_pd_config_optional() {
+                let prefix = Ipv6Net::new(pd_config.prefix, pd_config.len)?.trunc();
+                let mut subnets = prefix.subnets(64)?;
+            }
         }
     }
 
