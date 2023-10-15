@@ -28,7 +28,16 @@ impl Sit {
         let sit0 = CString::new("sit0")?;
 
         let tnlname_signed = unsafe { &*(tnlname.as_bytes() as *const _ as *const [i8]) };
+        let mut tnlname_arr = [0i8; libc::IFNAMSIZ];
+        for (&i, o) in tnlname_signed.iter().zip(tnlname_arr.iter_mut()) {
+            *o = i;
+        }
+
         let sit0_signed = unsafe { &*(sit0.as_bytes() as *const _ as *const [i8]) };
+        let mut sit0_arr = [0i8; libc::IFNAMSIZ];
+        for (&i, o) in sit0_signed.iter().zip(sit0_arr.iter_mut()) {
+            *o = i;
+        }
 
         let mut vihl = VerIhl::default();
 
@@ -36,7 +45,7 @@ impl Sit {
         vihl.set_ihl(5);
 
         let p = IpTunnelParm4 {
-            name: tnlname_signed.try_into()?,
+            name: tnlname_arr,
             link: unsafe { libc::if_nametoindex(ifmaster.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
@@ -61,7 +70,7 @@ impl Sit {
         }
 
         let ifr = IfReq4 {
-            name: sit0_signed.try_into()?,
+            name: sit0_arr,
             ifru_data: &p,
         };
 
@@ -107,10 +116,19 @@ impl IpIp6 {
         let ip6tnl0 = CString::new("ip6tnl0")?;
 
         let tnlname_signed = unsafe { &*(tnlname.as_bytes() as *const _ as *const [i8]) };
+        let mut tnlname_arr = [0i8; libc::IFNAMSIZ];
+        for (&i, o) in tnlname_signed.iter().zip(tnlname_arr.iter_mut()) {
+            *o = i;
+        }
+
         let ip6tnl0_signed = unsafe { &*(ip6tnl0.as_bytes() as *const _ as *const [i8]) };
+        let mut ip6tnl0_arr = [0i8; libc::IFNAMSIZ];
+        for (&i, o) in ip6tnl0_signed.iter().zip(ip6tnl0_arr.iter_mut()) {
+            *o = i;
+        }
 
         let p = IpTunnelParm6 {
-            name: tnlname_signed.try_into()?,
+            name: tnlname_arr,
             link: unsafe { libc::if_nametoindex(ifmaster.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
@@ -127,7 +145,7 @@ impl IpIp6 {
         }
 
         let ifr = IfReq6 {
-            name: ip6tnl0_signed.try_into()?,
+            name: ip6tnl0_arr,
             ifru_data: &p,
         };
 
@@ -156,10 +174,15 @@ impl IpIp6 {
 
 fn delete_tunnel(name: &str) -> Result<()> {
     let tnlname = CString::new(name)?;
+
     let tnlname_signed = unsafe { &*(tnlname.as_bytes() as *const _ as *const [i8]) };
+    let mut tnlname_arr = [0i8; libc::IFNAMSIZ];
+    for (&i, o) in tnlname_signed.iter().zip(tnlname_arr.iter_mut()) {
+        *o = i;
+    }
 
     let p = IpTunnelParm4 {
-        name: tnlname_signed.try_into()?,
+        name: tnlname_arr,
         link: 0,
         i_flags: 0,
         o_flags: 0,
@@ -180,7 +203,7 @@ fn delete_tunnel(name: &str) -> Result<()> {
     };
 
     let ifr = IfReq4 {
-        name: tnlname_signed.try_into()?,
+        name: tnlname_arr,
         ifru_data: &p,
     };
 
