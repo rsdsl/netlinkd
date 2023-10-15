@@ -25,6 +25,7 @@ fn main() -> Result<()> {
 
     create_vlans()?;
     configure_vlans()?;
+    println!("[info] config vlans 10.128.0.0/16 fe80::1/64");
 
     fs::write("/proc/sys/net/ipv4/ip_forward", "1")?;
     println!("[info] enable ipv4 routing");
