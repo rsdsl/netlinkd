@@ -1,6 +1,6 @@
 use crate::{Error, Result};
 
-use std::ffi::{c_int, CString};
+use std::ffi::{c_char, c_int, CString};
 use std::io;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
@@ -29,7 +29,7 @@ impl Sit {
         vihl.set_ihl(5);
 
         let p = IpTunnelParm4 {
-            name: CString::new(&*name)?,
+            name: CString::new(&*name)?.as_ptr(),
             link: unsafe { libc::if_nametoindex(CString::new(&*master)?.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
@@ -54,7 +54,7 @@ impl Sit {
         }
 
         let ifr = IfReq4 {
-            name: CString::new("sit0")?,
+            name: CString::new("sit0")?.as_ptr(),
             ifru_data: &p,
         };
 
@@ -96,7 +96,7 @@ impl Drop for IpIp6 {
 impl IpIp6 {
     pub fn new(name: String, master: String, laddr: Ipv6Addr, raddr: Ipv6Addr) -> Result<Self> {
         let p = IpTunnelParm6 {
-            name: CString::new(&*name)?,
+            name: CString::new(&*name)?.as_ptr(),
             link: unsafe { libc::if_nametoindex(CString::new(&*master)?.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
@@ -113,7 +113,7 @@ impl IpIp6 {
         }
 
         let ifr = IfReq6 {
-            name: CString::new("ip6tnl0")?,
+            name: CString::new("ip6tnl0")?.as_ptr(),
             ifru_data: &p,
         };
 
@@ -142,7 +142,7 @@ impl IpIp6 {
 
 fn delete_tunnel(name: &str) -> Result<()> {
     let p = IpTunnelParm4 {
-        name: CString::new(name)?,
+        name: CString::new(name)?.as_ptr(),
         link: 0,
         i_flags: 0,
         o_flags: 0,
@@ -163,7 +163,7 @@ fn delete_tunnel(name: &str) -> Result<()> {
     };
 
     let ifr = IfReq4 {
-        name: CString::new(name)?,
+        name: CString::new(name)?.as_ptr(),
         ifru_data: &p,
     };
 
@@ -212,7 +212,7 @@ struct IpHdr4 {
 #[derive(Debug)]
 #[repr(C)]
 struct IpTunnelParm4 {
-    name: CString,
+    name: *const c_char,
     link: u32,
     i_flags: u16,
     o_flags: u16,
@@ -224,7 +224,7 @@ struct IpTunnelParm4 {
 #[derive(Debug)]
 #[repr(C)]
 struct IfReq4 {
-    name: CString,
+    name: *const c_char,
     ifru_data: *const IpTunnelParm4,
 }
 
@@ -238,7 +238,7 @@ struct IpHdr6 {
 #[derive(Debug)]
 #[repr(C)]
 struct IpTunnelParm6 {
-    name: CString,
+    name: *const c_char,
     link: u32,
     i_flags: u16,
     o_flags: u16,
@@ -250,6 +250,6 @@ struct IpTunnelParm6 {
 #[derive(Debug)]
 #[repr(C)]
 struct IfReq6 {
-    name: CString,
+    name: *const c_char,
     ifru_data: *const IpTunnelParm6,
 }
