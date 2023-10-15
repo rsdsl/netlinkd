@@ -1,5 +1,5 @@
-use rsdsl_netlinkd::error::{Error, Result};
 use rsdsl_netlinkd::{addr, link, route};
+use rsdsl_netlinkd::{Error, Result};
 
 use std::fs::{self, File};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};

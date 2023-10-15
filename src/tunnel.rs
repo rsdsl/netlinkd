@@ -1,8 +1,8 @@
+use crate::{Error, Result};
+
 use std::ffi::CString;
 use std::io;
 use std::net::{Ipv4Addr, Ipv6Addr};
-
-use crate::{internal, Error, Result};
 
 /// A handle to a 6in4 tunnel. The interface is automatically deleted on drop.
 #[derive(Debug)]

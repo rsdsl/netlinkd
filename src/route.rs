@@ -1,4 +1,4 @@
-use crate::error::{Error, Result};
+use crate::{Error, Result};
 
 use std::net::{Ipv4Addr, Ipv6Addr};
 

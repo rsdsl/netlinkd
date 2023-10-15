@@ -1,5 +1,4 @@
-use std::io;
-use std::net;
+use std::{ffi, io, net};
 
 use thiserror::Error;
 
@@ -9,8 +8,12 @@ pub enum Error {
     LinkNotFound(String),
     #[error("not enough ipv6 subnets")]
     NotEnoughIpv6Subnets,
+
+    #[error("ffi nul: {0}")]
+    Nul(#[from] ffi::NulError),
     #[error("io: {0}")]
     Io(#[from] io::Error),
+
     #[error("ipnet prefix len: {0}")]
     IpnetPrefixLen(#[from] ipnet::PrefixLenError),
     #[error("net: parse ip address: {0}")]
