@@ -23,14 +23,18 @@ impl Drop for Sit {
 
 impl Sit {
     pub fn new(name: String, master: String, laddr: Ipv4Addr, raddr: Ipv4Addr) -> Result<Self> {
+        let tnlname = CString::new(&*name)?;
+        let ifmaster = CString::new(&*master)?;
+        let sit0 = CString::new("sit0")?;
+
         let mut vihl = VerIhl::default();
 
         vihl.set_version(4);
         vihl.set_ihl(5);
 
         let p = IpTunnelParm4 {
-            name: CString::new(&*name)?.as_ptr(),
-            link: unsafe { libc::if_nametoindex(CString::new(&*master)?.as_ptr()) },
+            name: tnlname.as_ptr(),
+            link: unsafe { libc::if_nametoindex(ifmaster.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
             i_key: 0,
@@ -44,8 +48,8 @@ impl Sit {
                 check: 0,
                 ttl: 64,
                 protocol: libc::IPPROTO_IPV6 as u8,
-                saddr: laddr,
-                daddr: raddr,
+                saddr: laddr.into(),
+                daddr: raddr.into(),
             },
         };
 
@@ -54,7 +58,7 @@ impl Sit {
         }
 
         let ifr = IfReq4 {
-            name: CString::new("sit0")?.as_ptr(),
+            name: sit0.as_ptr(),
             ifru_data: &p,
         };
 
@@ -95,16 +99,20 @@ impl Drop for IpIp6 {
 
 impl IpIp6 {
     pub fn new(name: String, master: String, laddr: Ipv6Addr, raddr: Ipv6Addr) -> Result<Self> {
+        let tnlname = CString::new(&*name)?;
+        let ifmaster = CString::new(&*master)?;
+        let ip6tnl0 = CString::new("ip6tnl0")?;
+
         let p = IpTunnelParm6 {
-            name: CString::new(&*name)?.as_ptr(),
-            link: unsafe { libc::if_nametoindex(CString::new(&*master)?.as_ptr()) },
+            name: tnlname.as_ptr(),
+            link: unsafe { libc::if_nametoindex(ifmaster.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
             i_key: 0,
             o_key: 0,
             iph: IpHdr6 {
-                saddr: laddr,
-                daddr: raddr,
+                saddr: laddr.into(),
+                daddr: raddr.into(),
             },
         };
 
@@ -113,7 +121,7 @@ impl IpIp6 {
         }
 
         let ifr = IfReq6 {
-            name: CString::new("ip6tnl0")?.as_ptr(),
+            name: ip6tnl0.as_ptr(),
             ifru_data: &p,
         };
 
@@ -141,8 +149,10 @@ impl IpIp6 {
 }
 
 fn delete_tunnel(name: &str) -> Result<()> {
+    let tnlname = CString::new(name)?;
+
     let p = IpTunnelParm4 {
-        name: CString::new(name)?.as_ptr(),
+        name: tnlname.as_ptr(),
         link: 0,
         i_flags: 0,
         o_flags: 0,
@@ -157,13 +167,13 @@ fn delete_tunnel(name: &str) -> Result<()> {
             ttl: 0,
             protocol: 0,
             check: 0,
-            saddr: Ipv4Addr::UNSPECIFIED,
-            daddr: Ipv4Addr::UNSPECIFIED,
+            saddr: Ipv4Addr::UNSPECIFIED.into(),
+            daddr: Ipv4Addr::UNSPECIFIED.into(),
         },
     };
 
     let ifr = IfReq4 {
-        name: CString::new(name)?.as_ptr(),
+        name: tnlname.as_ptr(),
         ifru_data: &p,
     };
 
@@ -205,8 +215,8 @@ struct IpHdr4 {
     ttl: u8,
     protocol: u8,
     check: u16,
-    saddr: Ipv4Addr,
-    daddr: Ipv4Addr,
+    saddr: u32,
+    daddr: u32,
 }
 
 #[derive(Debug)]
@@ -231,8 +241,8 @@ struct IfReq4 {
 #[derive(Debug)]
 #[repr(C)]
 struct IpHdr6 {
-    saddr: Ipv6Addr,
-    daddr: Ipv6Addr,
+    saddr: u128,
+    daddr: u128,
 }
 
 #[derive(Debug)]
