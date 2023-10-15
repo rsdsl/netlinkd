@@ -128,6 +128,11 @@ fn configure_wan() -> Result<()> {
                 let prefix = Ipv6Net::new(pd_config.prefix, pd_config.len)?.trunc();
                 let mut subnets = prefix.subnets(64)?;
 
+                let addr_wan = next_ifid1(&mut subnets)?;
+
+                addr::add("ppp0".to_string(), addr_wan.into(), 64)?;
+                println!("[info] config ppp0 gua {}/64", addr_wan);
+
                 let addr_lan = next_ifid1(&mut subnets)?;
 
                 addr::flush6("eth0".to_string())?;
