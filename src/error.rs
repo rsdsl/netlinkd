@@ -18,8 +18,6 @@ pub enum Error {
     IpnetPrefixLen(#[from] ipnet::PrefixLenError),
     #[error("net: parse ip address: {0}")]
     NetAddrParseError(#[from] net::AddrParseError),
-    #[error("notify: {0}")]
-    Notify(#[from] notify::Error),
     #[error("rtnetlink: {0}")]
     RtNetlink(#[from] rtnetlink::Error),
     #[error("serde_json: {0}")]
