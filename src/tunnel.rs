@@ -27,13 +27,16 @@ impl Sit {
         let ifmaster = CString::new(&*master)?;
         let sit0 = CString::new("sit0")?;
 
+        let tnlname_signed = unsafe { &*(tnlname.as_bytes() as *const _ as *const [i8]) };
+        let sit0_signed = unsafe { &*(sit0.as_bytes() as *const _ as *const [i8]) };
+
         let mut vihl = VerIhl::default();
 
         vihl.set_version(4);
         vihl.set_ihl(5);
 
         let p = IpTunnelParm4 {
-            name: tnlname.as_ptr(),
+            name: tnlname_signed.try_into()?,
             link: unsafe { libc::if_nametoindex(ifmaster.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
@@ -58,7 +61,7 @@ impl Sit {
         }
 
         let ifr = IfReq4 {
-            name: sit0.as_ptr(),
+            name: sit0_signed.try_into()?,
             ifru_data: &p,
         };
 
@@ -103,8 +106,11 @@ impl IpIp6 {
         let ifmaster = CString::new(&*master)?;
         let ip6tnl0 = CString::new("ip6tnl0")?;
 
+        let tnlname_signed = unsafe { &*(tnlname.as_bytes() as *const _ as *const [i8]) };
+        let ip6tnl0_signed = unsafe { &*(ip6tnl0.as_bytes() as *const _ as *const [i8]) };
+
         let p = IpTunnelParm6 {
-            name: tnlname.as_ptr(),
+            name: tnlname_signed.try_into()?,
             link: unsafe { libc::if_nametoindex(ifmaster.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
@@ -121,7 +127,7 @@ impl IpIp6 {
         }
 
         let ifr = IfReq6 {
-            name: ip6tnl0.as_ptr(),
+            name: ip6tnl0_signed.try_into()?,
             ifru_data: &p,
         };
 
@@ -150,9 +156,10 @@ impl IpIp6 {
 
 fn delete_tunnel(name: &str) -> Result<()> {
     let tnlname = CString::new(name)?;
+    let tnlname_signed = unsafe { &*(tnlname.as_bytes() as *const _ as *const [i8]) };
 
     let p = IpTunnelParm4 {
-        name: tnlname.as_ptr(),
+        name: tnlname_signed.try_into()?,
         link: 0,
         i_flags: 0,
         o_flags: 0,
@@ -173,7 +180,7 @@ fn delete_tunnel(name: &str) -> Result<()> {
     };
 
     let ifr = IfReq4 {
-        name: tnlname.as_ptr(),
+        name: tnlname_signed.try_into()?,
         ifru_data: &p,
     };
 
@@ -222,7 +229,7 @@ struct IpHdr4 {
 #[derive(Debug)]
 #[repr(C)]
 struct IpTunnelParm4 {
-    name: *const c_char,
+    name: [c_char; libc::IFNAMSIZ],
     link: u32,
     i_flags: u16,
     o_flags: u16,
@@ -234,7 +241,7 @@ struct IpTunnelParm4 {
 #[derive(Debug)]
 #[repr(C)]
 struct IfReq4 {
-    name: *const c_char,
+    name: [c_char; libc::IFNAMSIZ],
     ifru_data: *const IpTunnelParm4,
 }
 
@@ -248,7 +255,7 @@ struct IpHdr6 {
 #[derive(Debug)]
 #[repr(C)]
 struct IpTunnelParm6 {
-    name: *const c_char,
+    name: [c_char; libc::IFNAMSIZ],
     link: u32,
     i_flags: u16,
     o_flags: u16,
@@ -260,6 +267,6 @@ struct IpTunnelParm6 {
 #[derive(Debug)]
 #[repr(C)]
 struct IfReq6 {
-    name: *const c_char,
+    name: [c_char; libc::IFNAMSIZ],
     ifru_data: *const IpTunnelParm6,
 }

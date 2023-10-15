@@ -1,4 +1,4 @@
-use std::{ffi, io, net};
+use std::{array, ffi, io, net};
 
 use thiserror::Error;
 
@@ -9,6 +9,8 @@ pub enum Error {
     #[error("not enough ipv6 subnets")]
     NotEnoughIpv6Subnets,
 
+    #[error("array from slice: {0}")]
+    ArrayFromSlice(#[from] array::TryFromSliceError),
     #[error("ffi nul: {0}")]
     Nul(#[from] ffi::NulError),
     #[error("io: {0}")]
