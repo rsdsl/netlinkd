@@ -17,5 +17,6 @@ rsdsl_pd_config = { git = "https://github.com/rsdsl/pd_config.git", version = "0
 rtnetlink = "0.13.1"
 serde_json = "1.0"
 signal-hook = "0.3.17"
+sysinfo = "0.29.10"
 thiserror = "1.0"
 tokio = { version = "1.26.0", features = ["rt-multi-thread"] }

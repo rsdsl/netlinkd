@@ -8,6 +8,7 @@ use ipnet::Ipv6Net;
 use rsdsl_ip_config::DsConfig;
 use rsdsl_pd_config::PdConfig;
 use signal_hook::{consts::SIGUSR1, iterator::Signals};
+use sysinfo::{ProcessExt, Signal, System, SystemExt};
 
 const ADDR_AFTR: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 1);
 const ADDR_B4: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 2);
@@ -157,6 +158,10 @@ fn configure_wan() -> Result<()> {
                         "[info] config {} gua {}/64 zone {}",
                         vlan_name, vlan_addr, zone
                     );
+                }
+
+                for radvd in System::default().processes_by_exact_name("/bin/rsdsl_radvd") {
+                    radvd.kill_with(Signal::User1);
                 }
 
                 if link::exists("dslite0".to_string())? {
