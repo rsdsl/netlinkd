@@ -7,6 +7,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 use bitfield::bitfield;
 
 const SIOCADDTUNNEL: u64 = 0x89F0 + 1;
+const SIOCDELTUNNEL: u64 = 0x89F0 + 2;
 
 /// A handle to a 6in4 tunnel. The interface is automatically deleted on drop.
 #[derive(Debug)]
@@ -74,15 +75,7 @@ impl Sit {
     }
 
     fn do_delete(&self) -> Result<()> {
-        let tnlname = CString::new(self.name.as_str())?.into_raw();
-        let err = unsafe { internal::netlinkd_delete_tunnel(tnlname) };
-        let _ = unsafe { CString::from_raw(tnlname) };
-
-        if err < 0 {
-            Err(Error::Io(io::Error::last_os_error()))
-        } else {
-            Ok(())
-        }
+        delete_tunnel(&self.name)
     }
 }
 
@@ -139,16 +132,51 @@ impl IpIp6 {
     }
 
     fn do_delete(&self) -> Result<()> {
-        let tnlname = CString::new(self.name.as_str())?.into_raw();
-        let err = unsafe { internal::netlinkd_delete_tunnel(tnlname) };
-        let _ = unsafe { CString::from_raw(tnlname) };
-
-        if err < 0 {
-            Err(Error::Io(io::Error::last_os_error()))
-        } else {
-            Ok(())
-        }
+        delete_tunnel(&self.name)
     }
+}
+
+fn delete_tunnel(name: &str) -> Result<()> {
+    let p = IpTunnelParm4 {
+        name: CString::new(name)?,
+        link: 0,
+        i_flags: 0,
+        o_flags: 0,
+        i_key: 0,
+        o_key: 0,
+        iph: IpHdr4 {
+            vihl: VerIhl::default(),
+            tos: 0,
+            tot_len: 0,
+            id: 0,
+            frag_off: 0,
+            ttl: 0,
+            protocol: 0,
+            check: 0,
+            saddr: Ipv4Addr::UNSPECIFIED,
+            daddr: Ipv4Addr::UNSPECIFIED,
+        },
+    };
+
+    let ifr = IfReq4 {
+        name: CString::new(name)?,
+        ifru_data: &p,
+    };
+
+    let fd = libc::socket(libc::AF_INET6, libc::SOCK_DGRAM, libc::IPPROTO_IP);
+    if fd < 0 {
+        return Err(io::Error::last_os_error().into());
+    }
+
+    if libc::ioctl(fd, SIOCDELTUNNEL, &ifr) < 0 {
+        return Err(io::Error::last_os_error().into());
+    }
+
+    // Errors are safe to ignore because they don't affect tunnel creation
+    // but do leave the program in an inconsistent state.
+    libc::close(fd);
+
+    Ok(())
 }
 
 bitfield! {
