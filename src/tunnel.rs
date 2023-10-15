@@ -21,7 +21,7 @@ impl Drop for Sit {
 }
 
 impl Sit {
-    pub fn new(name: &str, master: &str, laddr: Ipv4Addr, raddr: Ipv4Addr) -> Result<Self> {
+    pub fn new(name: String, master: String, laddr: Ipv4Addr, raddr: Ipv4Addr) -> Result<Self> {
         let mut vihl = VerIhl::default();
 
         vihl.set_version(4);
@@ -49,7 +49,7 @@ impl Sit {
         };
 
         if p.link == 0 {
-            return Err(Error::LinkNotFound(master.to_owned()));
+            return Err(Error::LinkNotFound(master));
         }
 
         let ifr = IfReq4 {
@@ -70,9 +70,7 @@ impl Sit {
         // but do leave the program in an inconsistent state.
         libc::close(fd);
 
-        Ok(Self {
-            name: name.to_owned(),
-        })
+        Ok(Self { name })
     }
 
     fn do_delete(&self) -> Result<()> {
@@ -101,7 +99,7 @@ impl Drop for IpIp6 {
 }
 
 impl IpIp6 {
-    pub fn new(name: &str, master: &str, laddr: Ipv6Addr, raddr: Ipv6Addr) -> Result<Self> {
+    pub fn new(name: String, master: String, laddr: Ipv6Addr, raddr: Ipv6Addr) -> Result<Self> {
         let p = IpTunnelParm6 {
             name: CString::new(name)?,
             link: libc::if_nametoindex(CString::new(master)?.as_ptr()),
@@ -116,7 +114,7 @@ impl IpIp6 {
         };
 
         if p.link == 0 {
-            return Err(Error::LinkNotFound(master.to_owned()));
+            return Err(Error::LinkNotFound(master));
         }
 
         let ifr = IfReq6 {
@@ -137,9 +135,7 @@ impl IpIp6 {
         // but do leave the program in an inconsistent state.
         libc::close(fd);
 
-        Ok(Self {
-            name: name.to_owned(),
-        })
+        Ok(Self { name })
     }
 
     fn do_delete(&self) -> Result<()> {
