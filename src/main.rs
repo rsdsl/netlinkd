@@ -125,6 +125,14 @@ fn configure_wan() -> Result<()> {
             if let Some(pd_config) = read_pd_config_optional() {
                 let prefix = Ipv6Net::new(pd_config.prefix, pd_config.len)?.trunc();
                 let mut subnets = prefix.subnets(64)?;
+
+                let addr_lan = next_ifid1(&mut subnets)?;
+
+                addr::flush6("eth0".to_string())?;
+                addr::add_link_local("eth0".to_string(), LINK_LOCAL.into(), 64)?;
+                addr::add("eth0".to_string(), addr_lan.into(), 64)?;
+
+                println!("[info] config eth0 gua {}/64", addr_lan);
             }
         }
     }
