@@ -60,8 +60,8 @@ impl Sit {
                 check: 0,
                 ttl: 64,
                 protocol: libc::IPPROTO_IPV6 as u8,
-                saddr: laddr.into(),
-                daddr: raddr.into(),
+                saddr: u32::from(laddr).to_be(),
+                daddr: u32::from(raddr).to_be(),
             },
         };
 
@@ -135,8 +135,8 @@ impl IpIp6 {
             i_key: 0,
             o_key: 0,
             iph: IpHdr6 {
-                saddr: laddr.into(),
-                daddr: raddr.into(),
+                saddr: u128::from(laddr).to_be(),
+                daddr: u128::from(raddr).to_be(),
             },
         };
 
@@ -197,8 +197,8 @@ fn delete_tunnel(name: &str) -> Result<()> {
             ttl: 0,
             protocol: 0,
             check: 0,
-            saddr: Ipv4Addr::UNSPECIFIED.into(),
-            daddr: Ipv4Addr::UNSPECIFIED.into(),
+            saddr: 0,
+            daddr: 0,
         },
     };
 
