@@ -30,7 +30,7 @@ impl Sit {
 
         let p = IpTunnelParm4 {
             name: CString::new(name)?,
-            link: libc::if_nametoindex(CString::new(master)?.as_ptr()),
+            link: unsafe { libc::if_nametoindex(CString::new(master)?.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
             i_key: 0,
@@ -58,18 +58,20 @@ impl Sit {
             ifru_data: &p,
         };
 
-        let fd = libc::socket(libc::AF_INET, libc::SOCK_DGRAM, libc::IPPROTO_IP);
+        let fd = unsafe { libc::socket(libc::AF_INET, libc::SOCK_DGRAM, libc::IPPROTO_IP) };
         if fd < 0 {
             return Err(io::Error::last_os_error().into());
         }
 
-        if libc::ioctl(fd, SIOCADDTUNNEL, &ifr) < 0 {
+        if unsafe { libc::ioctl(fd, SIOCADDTUNNEL, &ifr) } < 0 {
             return Err(io::Error::last_os_error().into());
         }
 
         // Errors are safe to ignore because they don't affect tunnel creation
         // but do leave the program in an inconsistent state.
-        libc::close(fd);
+        unsafe {
+            libc::close(fd);
+        }
 
         Ok(Self { name })
     }
@@ -95,7 +97,7 @@ impl IpIp6 {
     pub fn new(name: String, master: String, laddr: Ipv6Addr, raddr: Ipv6Addr) -> Result<Self> {
         let p = IpTunnelParm6 {
             name: CString::new(name)?,
-            link: libc::if_nametoindex(CString::new(master)?.as_ptr()),
+            link: unsafe { libc::if_nametoindex(CString::new(master)?.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
             i_key: 0,
@@ -115,18 +117,20 @@ impl IpIp6 {
             ifru_data: &p,
         };
 
-        let fd = libc::socket(libc::AF_INET6, libc::SOCK_DGRAM, libc::IPPROTO_IP);
+        let fd = unsafe { libc::socket(libc::AF_INET6, libc::SOCK_DGRAM, libc::IPPROTO_IP) };
         if fd < 0 {
             return Err(io::Error::last_os_error().into());
         }
 
-        if libc::ioctl(fd, SIOCADDTUNNEL, &ifr) < 0 {
+        if unsafe { libc::ioctl(fd, SIOCADDTUNNEL, &ifr) } < 0 {
             return Err(io::Error::last_os_error().into());
         }
 
         // Errors are safe to ignore because they don't affect tunnel creation
         // but do leave the program in an inconsistent state.
-        libc::close(fd);
+        unsafe {
+            libc::close(fd);
+        }
 
         Ok(Self { name })
     }
@@ -163,18 +167,20 @@ fn delete_tunnel(name: &str) -> Result<()> {
         ifru_data: &p,
     };
 
-    let fd = libc::socket(libc::AF_INET6, libc::SOCK_DGRAM, libc::IPPROTO_IP);
+    let fd = unsafe { libc::socket(libc::AF_INET6, libc::SOCK_DGRAM, libc::IPPROTO_IP) };
     if fd < 0 {
         return Err(io::Error::last_os_error().into());
     }
 
-    if libc::ioctl(fd, SIOCDELTUNNEL, &ifr) < 0 {
+    if unsafe { libc::ioctl(fd, SIOCDELTUNNEL, &ifr) } < 0 {
         return Err(io::Error::last_os_error().into());
     }
 
     // Errors are safe to ignore because they don't affect tunnel creation
     // but do leave the program in an inconsistent state.
-    libc::close(fd);
+    unsafe {
+        libc::close(fd);
+    }
 
     Ok(())
 }
