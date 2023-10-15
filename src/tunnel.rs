@@ -1,13 +1,13 @@
 use crate::{Error, Result};
 
-use std::ffi::{c_ulong, CString};
+use std::ffi::{c_int, CString};
 use std::io;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use bitfield::bitfield;
 
-const SIOCADDTUNNEL: c_ulong = 0x89F0 + 1;
-const SIOCDELTUNNEL: c_ulong = 0x89F0 + 2;
+const SIOCADDTUNNEL: c_int = 0x89F0 + 1;
+const SIOCDELTUNNEL: c_int = 0x89F0 + 2;
 
 /// A handle to a 6in4 tunnel. The interface is automatically deleted on drop.
 #[derive(Debug)]
