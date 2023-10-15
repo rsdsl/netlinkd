@@ -98,28 +98,40 @@ impl Drop for IpIp6 {
 
 impl IpIp6 {
     pub fn new(name: &str, master: &str, laddr: Ipv6Addr, raddr: Ipv6Addr) -> Result<Self> {
-        let tnlname = CString::new(name)?.into_raw();
-        let ifmaster = CString::new(master)?.into_raw();
-
-        let err = unsafe {
-            internal::netlinkd_create_4in6(
-                tnlname,
-                ifmaster,
-                &laddr.octets() as *const u8,
-                &raddr.octets() as *const u8,
-            )
+        let p = IpTunnelParm6 {
+            name: CString::new(name)?,
+            link: libc::if_nametoindex(CString::new(master)?.as_ptr()),
+            i_flags: 0,
+            o_flags: 0,
+            i_key: 0,
+            o_key: 0,
+            iph: IpHdr6 {
+                saddr: laddr,
+                daddr: raddr,
+            },
         };
 
-        let _ = unsafe { CString::from_raw(tnlname) };
-        let _ = unsafe { CString::from_raw(ifmaster) };
-
-        if err < 0 {
-            Err(Error::Io(io::Error::last_os_error()))
-        } else {
-            Ok(Self {
-                name: name.to_owned(),
-            })
+        if p.link == 0 {
+            return Err(Error::LinkNotFound(master.to_owned()));
         }
+
+        let ifr = IfReq6 {
+            name: CString::new("ip6tnl0")?,
+            ifru_data: &p,
+        };
+
+        let fd = libc::socket(libc::AF_INET6, libc::SOCK_DGRAM, libc::IPPROTO_IP);
+        if fd < 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+
+        if libc::ioctl(fd, SIOCADDTUNNEL, &ifr) < 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+
+        Ok(Self {
+            name: name.to_owned(),
+        })
     }
 
     fn do_delete(&self) -> Result<()> {
@@ -176,4 +188,30 @@ struct IpTunnelParm4 {
 struct IfReq4 {
     name: CString,
     ifru_data: *const IpTunnelParm4,
+}
+
+#[derive(Debug)]
+#[repr(C)]
+struct IpHdr6 {
+    saddr: Ipv6Addr,
+    daddr: Ipv6Addr,
+}
+
+#[derive(Debug)]
+#[repr(C)]
+struct IpTunnelParm6 {
+    name: CString,
+    link: u32,
+    i_flags: u16,
+    o_flags: u16,
+    i_key: u32,
+    o_key: u32,
+    iph: IpHdr6,
+}
+
+#[derive(Debug)]
+#[repr(C)]
+struct IfReq6 {
+    name: CString,
+    ifru_data: *const IpTunnelParm6,
 }
