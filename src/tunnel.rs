@@ -176,7 +176,7 @@ fn delete_tunnel(name: &str) -> Result<()> {
         return Err(io::Error::last_os_error().into());
     }
 
-    // Errors are safe to ignore because they don't affect tunnel creation
+    // Errors are safe to ignore because they don't affect tunnel deletion
     // but do leave the program in an inconsistent state.
     unsafe {
         libc::close(fd);
