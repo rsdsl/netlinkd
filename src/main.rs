@@ -3,8 +3,6 @@ use rsdsl_netlinkd::{Error, Result};
 
 use std::fs::{self, File};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use std::thread;
-use std::time::Duration;
 
 use ipnet::Ipv6Net;
 use rsdsl_ip_config::DsConfig;
@@ -62,10 +60,9 @@ fn configure_lan() -> Result<()> {
 fn create_vlans() -> Result<()> {
     let zones = ["trusted", "untrusted", "isolated", "exposed"];
 
-    for (i, zone) in zones.iter().enumerate() {
+    for (i, _) in zones.iter().enumerate() {
         let vlan_id = 10 * (i + 1);
         let vlan_name = format!("eth0.{}", vlan_id);
-        let vlan_addr = IpAddr::V4(Ipv4Addr::new(10, 128, vlan_id as u8, 254));
 
         link::add_vlan(vlan_name.clone(), "eth0".to_string(), vlan_id as u16)?;
         link::up(vlan_name.clone())?;
@@ -79,7 +76,7 @@ fn create_vlans() -> Result<()> {
 fn configure_vlans() -> Result<()> {
     let zones = ["trusted", "untrusted", "isolated", "exposed"];
 
-    for (i, zone) in zones.iter().enumerate() {
+    for (i, _) in zones.iter().enumerate() {
         let vlan_id = 10 * (i + 1);
         let vlan_name = format!("eth0.{}", vlan_id);
         let vlan_addr = IpAddr::V4(Ipv4Addr::new(10, 128, vlan_id as u8, 254));
