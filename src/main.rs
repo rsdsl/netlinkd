@@ -105,7 +105,36 @@ fn configure_wan_logged() {
 }
 
 fn configure_wan() -> Result<()> {
-    todo!()
+    if let Some(ds_config) = read_ds_config_optional() {
+        link::set_mtu("ppp0".to_string(), 1492)?;
+        link::up("ppp0".to_string())?;
+
+        // Deconfigure everything, just to be safe.
+        addr::flush("ppp0".to_string())?;
+        route::flush("ppp0".to_string())?;
+
+        if let Some(v4) = ds_config.v4 {
+            addr::add("ppp0".to_string(), v4.addr.into(), 32)?;
+            route::add4(Ipv4Addr::UNSPECIFIED, 0, None, "ppp0".to_string())?;
+        }
+
+        if let Some(v6) = ds_config.v6 {
+            addr::add("ppp0".to_string(), v6.laddr.into(), 64)?;
+            route::add6(Ipv6Addr::UNSPECIFIED, 0, None, "ppp0".to_string())?;
+        }
+    }
+
+    Ok(())
+}
+
+fn read_ds_config_optional() -> Option<DsConfig> {
+    let mut file = File::open(rsdsl_ip_config::LOCATION).ok()?;
+    serde_json::from_reader(&mut file).ok()
+}
+
+fn read_pd_config_optional() -> Option<PdConfig> {
+    let mut file = File::open(rsdsl_pd_config::LOCATION).ok()?;
+    serde_json::from_reader(&mut file).ok()
 }
 
 fn next_ifid1<T: Iterator<Item = Ipv6Net>>(subnets: &mut T) -> Result<Ipv6Addr> {
