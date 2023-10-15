@@ -9,6 +9,8 @@ use rsdsl_ip_config::DsConfig;
 use rsdsl_pd_config::PdConfig;
 use signal_hook::{consts::SIGUSR1, iterator::Signals};
 
+const ADDR_AFTR: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 1);
+const ADDR_B4: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 2);
 const LINK_LOCAL: Ipv6Addr = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1);
 
 fn main() -> Result<()> {
@@ -155,6 +157,24 @@ fn configure_wan() -> Result<()> {
                         "[info] config {} gua {}/64 zone {}",
                         vlan_name, vlan_addr, zone
                     );
+                }
+
+                if link::exists("dslite0".to_string())? {
+                    link::up("dslite0".to_string())?;
+
+                    addr::flush("dslite0".to_string())?;
+                    addr::add("dslite0".to_string(), ADDR_B4.into(), 29)?;
+
+                    if ds_config.v4.is_none() {
+                        route::add4(
+                            Ipv4Addr::UNSPECIFIED,
+                            0,
+                            Some(ADDR_AFTR),
+                            "dslite0".to_string(),
+                        )?;
+                    }
+
+                    println!("[info] config dslite0 {}/29", ADDR_B4);
                 }
             }
         }
