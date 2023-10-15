@@ -27,14 +27,14 @@ impl Sit {
         vihl.set_version(4);
         vihl.set_ihl(5);
 
-        let p = IpTunnelParm {
+        let p = IpTunnelParm4 {
             name: CString::new(name)?,
             link: libc::if_nametoindex(CString::new(master)?.as_ptr()),
             i_flags: 0,
             o_flags: 0,
             i_key: 0,
             o_key: 0,
-            iph: IpHdr {
+            iph: IpHdr4 {
                 vihl,
                 tos: 0,
                 tot_len: 0,
@@ -52,7 +52,7 @@ impl Sit {
             return Err(Error::LinkNotFound(master.to_owned()));
         }
 
-        let ifr = IfReq {
+        let ifr = IfReq4 {
             name: CString::new("sit0")?,
             ifru_data: &p,
         };
@@ -146,7 +146,7 @@ bitfield! {
 
 #[derive(Debug)]
 #[repr(C)]
-struct IpHdr {
+struct IpHdr4 {
     vihl: VerIhl,
     tos: u8,
     tot_len: u16,
@@ -161,19 +161,19 @@ struct IpHdr {
 
 #[derive(Debug)]
 #[repr(C)]
-struct IpTunnelParm {
+struct IpTunnelParm4 {
     name: CString,
     link: u32,
     i_flags: u16,
     o_flags: u16,
     i_key: u32,
     o_key: u32,
-    iph: IpHdr,
+    iph: IpHdr4,
 }
 
 #[derive(Debug)]
 #[repr(C)]
-struct IfReq {
+struct IfReq4 {
     name: CString,
-    ifru_data: *const IpTunnelParm,
+    ifru_data: *const IpTunnelParm4,
 }
