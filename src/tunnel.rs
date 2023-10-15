@@ -4,6 +4,10 @@ use std::ffi::CString;
 use std::io;
 use std::net::{Ipv4Addr, Ipv6Addr};
 
+use bitfield::bitfield;
+
+const SIOCADDTUNNEL: u64 = 0x89F0 + 1;
+
 /// A handle to a 6in4 tunnel. The interface is automatically deleted on drop.
 #[derive(Debug)]
 pub struct Sit {
@@ -18,28 +22,53 @@ impl Drop for Sit {
 
 impl Sit {
     pub fn new(name: &str, master: &str, laddr: Ipv4Addr, raddr: Ipv4Addr) -> Result<Self> {
-        let tnlname = CString::new(name)?.into_raw();
-        let ifmaster = CString::new(master)?.into_raw();
+        let mut vihl = VerIhl::default();
 
-        let err = unsafe {
-            internal::netlinkd_create_6in4(
-                tnlname,
-                ifmaster,
-                u32::from(laddr).to_be(),
-                u32::from(raddr).to_be(),
-            )
+        vihl.set_version(4);
+        vihl.set_ihl(5);
+
+        let p = IpTunnelParm {
+            name: CString::new(name)?,
+            link: libc::if_nametoindex(CString::new(master)?.as_ptr()),
+            i_flags: 0,
+            o_flags: 0,
+            i_key: 0,
+            o_key: 0,
+            iph: IpHdr {
+                vihl,
+                tos: 0,
+                tot_len: 0,
+                id: 0,
+                frag_off: 0,
+                check: 0,
+                ttl: 64,
+                protocol: libc::IPPROTO_IPV6 as u8,
+                saddr: laddr,
+                daddr: raddr,
+            },
         };
 
-        let _ = unsafe { CString::from_raw(tnlname) };
-        let _ = unsafe { CString::from_raw(ifmaster) };
-
-        if err < 0 {
-            Err(Error::Io(io::Error::last_os_error()))
-        } else {
-            Ok(Self {
-                name: name.to_owned(),
-            })
+        if p.link == 0 {
+            return Err(Error::LinkNotFound(master.to_owned()));
         }
+
+        let ifr = IfReq {
+            name: CString::new("sit0")?,
+            ifru_data: &p,
+        };
+
+        let fd = libc::socket(libc::AF_INET, libc::SOCK_DGRAM, libc::IPPROTO_IP);
+        if fd < 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+
+        if libc::ioctl(fd, SIOCADDTUNNEL, &ifr) < 0 {
+            return Err(io::Error::last_os_error().into());
+        }
+
+        Ok(Self {
+            name: name.to_owned(),
+        })
     }
 
     fn do_delete(&self) -> Result<()> {
@@ -104,4 +133,47 @@ impl IpIp6 {
             Ok(())
         }
     }
+}
+
+bitfield! {
+    #[derive(Default)]
+    struct VerIhl(u8);
+    impl Debug;
+
+    version, set_version: 7, 4;
+    ihl, set_ihl: 3, 0;
+}
+
+#[derive(Debug)]
+#[repr(C)]
+struct IpHdr {
+    vihl: VerIhl,
+    tos: u8,
+    tot_len: u16,
+    id: u16,
+    frag_off: u16,
+    ttl: u8,
+    protocol: u8,
+    check: u16,
+    saddr: Ipv4Addr,
+    daddr: Ipv4Addr,
+}
+
+#[derive(Debug)]
+#[repr(C)]
+struct IpTunnelParm {
+    name: CString,
+    link: u32,
+    i_flags: u16,
+    o_flags: u16,
+    i_key: u32,
+    o_key: u32,
+    iph: IpHdr,
+}
+
+#[derive(Debug)]
+#[repr(C)]
+struct IfReq {
+    name: CString,
+    ifru_data: *const IpTunnelParm,
 }
