@@ -29,8 +29,8 @@ impl Sit {
         vihl.set_ihl(5);
 
         let p = IpTunnelParm4 {
-            name: CString::new(name)?,
-            link: unsafe { libc::if_nametoindex(CString::new(master)?.as_ptr()) },
+            name: CString::new(&*name)?,
+            link: unsafe { libc::if_nametoindex(CString::new(&*master)?.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
             i_key: 0,
@@ -96,8 +96,8 @@ impl Drop for IpIp6 {
 impl IpIp6 {
     pub fn new(name: String, master: String, laddr: Ipv6Addr, raddr: Ipv6Addr) -> Result<Self> {
         let p = IpTunnelParm6 {
-            name: CString::new(name)?,
-            link: unsafe { libc::if_nametoindex(CString::new(master)?.as_ptr()) },
+            name: CString::new(&*name)?,
+            link: unsafe { libc::if_nametoindex(CString::new(&*master)?.as_ptr()) },
             i_flags: 0,
             o_flags: 0,
             i_key: 0,
