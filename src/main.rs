@@ -133,6 +133,22 @@ fn configure_wan() -> Result<()> {
                 addr::add("eth0".to_string(), addr_lan.into(), 64)?;
 
                 println!("[info] config eth0 gua {}/64", addr_lan);
+
+                let zones = ["trusted", "untrusted", "isolated", "exposed"];
+                for (i, zone) in zones.iter().enumerate() {
+                    let vlan_id = 10 * (i + 1);
+                    let vlan_name = format!("eth0.{}", vlan_id);
+                    let vlan_addr = next_ifid1(&mut subnets)?;
+
+                    addr::flush6(vlan_name.clone())?;
+                    addr::add_link_local(vlan_name.clone(), LINK_LOCAL.into(), 64)?;
+                    addr::add(vlan_name.clone(), vlan_addr.into(), 64)?;
+
+                    println!(
+                        "[info] config {} gua {}/64 zone {}",
+                        vlan_name, vlan_addr, zone
+                    );
+                }
             }
         }
     }
