@@ -160,7 +160,7 @@ fn configure_wan() -> Result<()> {
                     );
                 }
 
-                for radvd in System::default().processes_by_exact_name("/bin/rsdsl_radvd") {
+                for radvd in System::new_all().processes_by_exact_name("rsdsl_radvd") {
                     radvd.kill_with(Signal::User1);
                 }
 
