@@ -107,12 +107,17 @@ fn configure_wan_logged() {
 
 fn configure_wan() -> Result<()> {
     if let Some(ds_config) = read_ds_config_optional() {
-        link::set_mtu("ppp0".to_string(), 1492)?;
-        link::up("ppp0".to_string())?;
+        // Only initialize the interface if an NCP is opened.
+        // This not being the case is a good indicator
+        // of the interface not being present due to not having a PPP session.
+        if ds_config.v4.is_some() || ds_config.v6.is_some() {
+            link::set_mtu("ppp0".to_string(), 1492)?;
+            link::up("ppp0".to_string())?;
 
-        // Deconfigure everything, just to be safe.
-        addr::flush("ppp0".to_string())?;
-        route::flush("ppp0".to_string())?;
+            // Deconfigure everything, just to be safe.
+            addr::flush("ppp0".to_string())?;
+            route::flush("ppp0".to_string())?;
+        }
 
         if let Some(v4) = ds_config.v4 {
             addr::add("ppp0".to_string(), v4.addr.into(), 32)?;
@@ -183,10 +188,10 @@ fn configure_wan() -> Result<()> {
 
                     println!("[info] config dslite0 {}/29", ADDR_B4);
                 }
-            } else {
-                // Deconfiguration is critical too, forward event to dhcp6.
-                inform_dhcp6();
             }
+        } else {
+            // Deconfiguration is critical too, forward event to dhcp6.
+            inform_dhcp6();
         }
     }
 
