@@ -127,6 +127,10 @@ fn configure_wan() -> Result<()> {
 
             println!("[info] config ppp0 ll {}/64", v6.laddr);
 
+            // Forward the event to dhcp6.
+            // The IPv6 link has already been (re)configured at this point.
+            inform_dhcp6();
+
             if let Some(pd_config) = read_pd_config_optional() {
                 let prefix = Ipv6Net::new(pd_config.prefix, pd_config.len)?.trunc();
                 let mut subnets = prefix.subnets(64)?;
@@ -160,9 +164,7 @@ fn configure_wan() -> Result<()> {
                     );
                 }
 
-                for radvd in System::new_all().processes_by_exact_name("rsdsl_radvd") {
-                    radvd.kill_with(Signal::User1);
-                }
+                inform_radvd();
 
                 if link::exists("dslite0".to_string())? {
                     link::up("dslite0".to_string())?;
@@ -181,6 +183,9 @@ fn configure_wan() -> Result<()> {
 
                     println!("[info] config dslite0 {}/29", ADDR_B4);
                 }
+            } else {
+                // Deconfiguration is critical too, forward event to dhcp6.
+                inform_dhcp6();
             }
         }
     }
@@ -200,4 +205,16 @@ fn read_pd_config_optional() -> Option<PdConfig> {
 
 fn next_ifid1<T: Iterator<Item = Ipv6Net>>(subnets: &mut T) -> Result<Ipv6Addr> {
     Ok((u128::from(subnets.next().ok_or(Error::NotEnoughIpv6Subnets)?.addr()) + 1).into())
+}
+
+fn inform_radvd() {
+    for radvd in System::new_all().processes_by_exact_name("rsdsl_radvd") {
+        radvd.kill_with(Signal::User1);
+    }
+}
+
+fn inform_dhcp6() {
+    for dhcp6 in System::new_all().processes_by_exact_name("rsdsl_dhcp6") {
+        dhcp6.kill_with(Signal::User1);
+    }
 }
