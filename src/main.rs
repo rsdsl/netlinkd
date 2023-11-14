@@ -1,25 +1,44 @@
-use rsdsl_netlinkd::{addr, link, route};
-use rsdsl_netlinkd::{Error, Result};
+use rsdsl_netlinklib::blocking::{addr, link, route};
 
 use std::fs::{self, File};
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::io;
+use std::net::{self, IpAddr, Ipv4Addr, Ipv6Addr};
 
 use ipnet::Ipv6Net;
 use rsdsl_ip_config::DsConfig;
 use rsdsl_pd_config::PdConfig;
 use signal_hook::{consts::SIGUSR1, iterator::Signals};
 use sysinfo::{ProcessExt, Signal, System, SystemExt};
+use thiserror::Error;
 
 const ADDR_AFTR: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 1);
 const ADDR_B4: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 2);
 const LINK_LOCAL: Ipv6Addr = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1);
+
+#[derive(Debug, Error)]
+enum Error {
+    #[error("not enough ipv6 subnets")]
+    NotEnoughIpv6Subnets,
+
+    #[error("can't parse network address: {0}")]
+    AddrParse(#[from] net::AddrParseError),
+    #[error("io error: {0}")]
+    Io(#[from] io::Error),
+
+    #[error("invalid prefix length: {0}")]
+    PrefixLen(#[from] ipnet::PrefixLenError),
+    #[error("netlinklib error: {0}")]
+    Netlinklib(#[from] rsdsl_netlinklib::Error),
+}
+
+type Result<T> = std::result::Result<T, Error>;
 
 fn main() -> Result<()> {
     println!("[info] wait for eth0");
     link::wait_exists("eth0".into())?;
     println!("[info] detect eth0");
 
-    link::up("eth0".into())?;
+    link::set("eth0".into(), true)?;
 
     configure_lan()?;
     println!("[info] config eth0 10.128.0.254/24 fe80::1/64");
@@ -39,7 +58,7 @@ fn main() -> Result<()> {
     link::wait_exists("eth1".into())?;
     println!("[info] detect eth1");
 
-    link::up("eth1".into())?;
+    link::set("eth1".into(), true)?;
 
     configure_modem()?;
     println!("[info] config eth1 192.168.1.2/24 (modem)");
@@ -68,7 +87,7 @@ fn create_vlans() -> Result<()> {
         let vlan_name = format!("eth0.{}", vlan_id);
 
         link::add_vlan(vlan_name.clone(), "eth0".to_string(), vlan_id as u16)?;
-        link::up(vlan_name.clone())?;
+        link::set(vlan_name.clone(), true)?;
 
         addr::flush(vlan_name.clone())?;
     }
@@ -112,7 +131,7 @@ fn configure_wan() -> Result<()> {
         // of the interface not being present due to not having a PPP session.
         if ds_config.v4.is_some() || ds_config.v6.is_some() {
             link::set_mtu("ppp0".to_string(), 1492)?;
-            link::up("ppp0".to_string())?;
+            link::set("ppp0".to_string(), true)?;
 
             // Deconfigure everything, just to be safe.
             addr::flush("ppp0".to_string())?;
@@ -172,7 +191,7 @@ fn configure_wan() -> Result<()> {
                 inform_radvd();
 
                 if link::exists("dslite0".to_string())? {
-                    link::up("dslite0".to_string())?;
+                    link::set("dslite0".to_string(), true)?;
 
                     addr::flush("dslite0".to_string())?;
                     addr::add("dslite0".to_string(), ADDR_B4.into(), 29)?;
