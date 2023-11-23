@@ -442,6 +442,7 @@ dependencies = [
  "signal-hook",
  "sysinfo",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]
