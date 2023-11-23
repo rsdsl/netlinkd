@@ -3,13 +3,26 @@ use rsdsl_netlinklib::blocking::Connection;
 use std::fs::{self, File};
 use std::io;
 use std::net::{self, IpAddr, Ipv4Addr, Ipv6Addr};
+use std::process;
+
+use tokio::runtime::Runtime;
 
 use ipnet::Ipv6Net;
+use netlink_packet_core::{NetlinkHeader, NetlinkMessage, NetlinkPayload};
+use netlink_packet_netfilter::{
+    constants::{NLM_F_ACK, NLM_F_REQUEST},
+    NetfilterMessage,
+};
+use netlink_sys::{protocols::NETLINK_NETFILTER, Socket};
 use rsdsl_ip_config::DsConfig;
 use rsdsl_pd_config::PdConfig;
 use signal_hook::{consts::SIGUSR1, iterator::Signals};
 use sysinfo::{ProcessExt, Signal, System, SystemExt};
 use thiserror::Error;
+
+const SIZEOFNLMSGHDR: u32 = 0x10;
+const CONNTRACK_TABLE_CONNTRACK: u16 = 1;
+const IPCTNL_MSG_CT_DELETE: u16 = 2;
 
 const ADDR_AFTR: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 1);
 const ADDR_B4: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 2);
@@ -17,6 +30,9 @@ const LINK_LOCAL: Ipv6Addr = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1);
 
 #[derive(Debug, Error)]
 enum Error {
+    #[error("netlink did not return status information")]
+    NoNlStatus,
+
     #[error("not enough ipv6 subnets")]
     NotEnoughIpv6Subnets,
 
@@ -27,6 +43,8 @@ enum Error {
 
     #[error("invalid prefix length: {0}")]
     PrefixLen(#[from] ipnet::PrefixLenError),
+    #[error("can't decode netlink packet: {0}")]
+    NlDecode(#[from] netlink_packet_utils::DecodeError),
     #[error("netlinklib error: {0}")]
     Netlinklib(#[from] rsdsl_netlinklib::Error),
 }
@@ -138,6 +156,9 @@ fn configure_wan(conn: &Connection) -> Result<()> {
             // Deconfigure everything, just to be safe.
             conn.address_flush("ppp0".to_string())?;
             conn.route_flush("ppp0".to_string())?;
+
+            // Flush the conntrack state to prevent NAT hiccups.
+            flush_conntrack()?;
         }
 
         if let Some(v4) = ds_config.v4 {
@@ -217,6 +238,50 @@ fn configure_wan(conn: &Connection) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Flush the conntrack state to avoid breaking active NAT bindings.
+/// This is required for VoIP to work if it uses a fast registration interval.
+async fn flush_conntrack_async() -> Result<()> {
+    let mut recv_buf = vec![0; 4096];
+
+    let mut socket = Socket::new(NETLINK_NETFILTER)?;
+    socket.bind_auto()?;
+
+    let mut header = NetlinkHeader::default();
+
+    header.length = SIZEOFNLMSGHDR;
+    header.message_type = (CONNTRACK_TABLE_CONNTRACK << 8) | IPCTNL_MSG_CT_DELETE;
+    header.flags = NLM_F_REQUEST | NLM_F_ACK;
+    header.sequence_number = 1;
+    header.port_number = process::id();
+
+    let mut packet = NetlinkMessage::new(header, NetlinkPayload::<NetfilterMessage>::Noop);
+
+    packet.finalize();
+
+    let mut buf = vec![0; packet.header.length as usize];
+    packet.serialize(&mut buf[..]);
+    socket.send(&buf[..], 0)?;
+
+    let n = socket.recv(&mut &mut recv_buf[..], 0)?;
+    let bytes = &recv_buf[..n];
+
+    let rx_packet = <NetlinkMessage<NetfilterMessage>>::deserialize(bytes)?;
+
+    if let NetlinkPayload::Error(e) = rx_packet.payload {
+        if e.code.is_some() {
+            Err(e.to_io().into())
+        } else {
+            Ok(())
+        }
+    } else {
+        Err(Error::NoNlStatus)
+    }
+}
+
+fn flush_conntrack() -> Result<()> {
+    Runtime::new()?.block_on(flush_conntrack_async())
 }
 
 fn read_ds_config_optional() -> Option<DsConfig> {

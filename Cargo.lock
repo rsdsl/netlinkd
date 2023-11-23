@@ -433,7 +433,9 @@ name = "rsdsl_netlinkd"
 version = "0.8.3-dev"
 dependencies = [
  "ipnet",
+ "netlink-packet-core",
  "netlink-packet-netfilter",
+ "netlink-packet-utils",
  "netlink-sys",
  "rsdsl_ip_config",
  "rsdsl_netlinklib",
