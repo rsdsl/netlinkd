@@ -10,8 +10,8 @@ use tokio::runtime::Runtime;
 use ipnet::Ipv6Net;
 use netlink_packet_core::{NetlinkHeader, NetlinkMessage, NetlinkPayload};
 use netlink_packet_netfilter::{
-    constants::{NLM_F_ACK, NLM_F_REQUEST},
-    NetfilterMessage,
+    constants::{AF_UNSPEC, NFNETLINK_V0, NFNL_SUBSYS_CTNETLINK, NLM_F_ACK, NLM_F_REQUEST},
+    NetfilterHeader, NetfilterMessage, NetfilterMessageInner,
 };
 use netlink_sys::{protocols::NETLINK_NETFILTER, Socket};
 use rsdsl_ip_config::DsConfig;
@@ -21,8 +21,8 @@ use sysinfo::{ProcessExt, Signal, System, SystemExt};
 use thiserror::Error;
 
 const SIZEOFNLMSGHDR: u32 = 0x10;
-const CONNTRACK_TABLE_CONNTRACK: u16 = 1;
-const IPCTNL_MSG_CT_DELETE: u16 = 2;
+const CONNTRACK_TABLE_CONNTRACK: u8 = 1;
+const IPCTNL_MSG_CT_DELETE: u8 = 2;
 
 const ADDR_AFTR: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 1);
 const ADDR_B4: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 2);
@@ -248,15 +248,24 @@ async fn flush_conntrack_async() -> Result<()> {
     let mut socket = Socket::new(NETLINK_NETFILTER)?;
     socket.bind_auto()?;
 
+    let nfmsg = NetfilterMessage::new(
+        NetfilterHeader::new(AF_UNSPEC, NFNETLINK_V0, 0),
+        NetfilterMessageInner::Other {
+            subsys: NFNL_SUBSYS_CTNETLINK,
+            message_type: IPCTNL_MSG_CT_DELETE,
+            nlas: Vec::default(),
+        },
+    );
+
     let mut header = NetlinkHeader::default();
 
     header.length = SIZEOFNLMSGHDR;
-    header.message_type = (CONNTRACK_TABLE_CONNTRACK << 8) | IPCTNL_MSG_CT_DELETE;
+    header.message_type = ((CONNTRACK_TABLE_CONNTRACK as u16) << 8) | IPCTNL_MSG_CT_DELETE as u16;
     header.flags = NLM_F_REQUEST | NLM_F_ACK;
     header.sequence_number = 1;
     header.port_number = process::id();
 
-    let mut packet = NetlinkMessage::new(header, NetlinkPayload::<NetfilterMessage>::Noop);
+    let mut packet = NetlinkMessage::new(header, NetlinkPayload::from(nfmsg));
 
     packet.finalize();
 
