@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 ipnet = "2.8.0"
 netlink-packet-netfilter = "0.2.0"
+netlink-sys = { version = "0.8.5", features = ["tokio", "tokio_socket"] }
 rsdsl_ip_config = { git = "https://github.com/rsdsl/ip_config.git", version = "0.2.4" }
 rsdsl_netlinklib = { git = "https://github.com/rsdsl/netlinklib.git", version = "0.4.5", features = ["blocking"] }
 rsdsl_pd_config = { git = "https://github.com/rsdsl/pd_config.git", version = "0.1.0" }

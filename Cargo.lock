@@ -434,6 +434,7 @@ version = "0.8.3-dev"
 dependencies = [
  "ipnet",
  "netlink-packet-netfilter",
+ "netlink-sys",
  "rsdsl_ip_config",
  "rsdsl_netlinklib",
  "rsdsl_pd_config",
