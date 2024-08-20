@@ -27,6 +27,15 @@ const IPCTNL_MSG_CT_DELETE: u8 = 2;
 const ADDR_AFTR: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 1);
 const ADDR_B4: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 2);
 const LINK_LOCAL: Ipv6Addr = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1);
+const ULA_TEMPLATE: Ipv6Addr = Ipv6Addr::new(0xfd0b, 0x9272, 0x534e, 0, 0, 0, 0, 1);
+
+macro_rules! ula {
+    ($subnet:expr) => {{
+        let mut segments = ULA_TEMPLATE.segments();
+        segments[3] += $subnet;
+        Ipv6Addr::from(segments)
+    }};
+}
 
 #[derive(Debug, Error)]
 enum Error {
@@ -94,6 +103,7 @@ fn main() -> Result<()> {
 fn configure_lan(conn: &Connection) -> Result<()> {
     conn.address_flush("eth0".into())?;
     conn.address_add_link_local("eth0".into(), LINK_LOCAL.into(), 64)?;
+    conn.address_add("eth0".into(), ula!(0).into(), 64)?;
     conn.address_add("eth0".into(), "10.128.0.254".parse()?, 24)?;
 
     Ok(())
@@ -124,6 +134,7 @@ fn configure_vlans(conn: &Connection) -> Result<()> {
         let vlan_addr = IpAddr::V4(Ipv4Addr::new(10, 128, vlan_id as u8, 254));
 
         conn.address_add_link_local(vlan_name.clone(), LINK_LOCAL.into(), 64)?;
+        conn.address_add(vlan_name.clone(), ula!(2 + i as u16).into(), 64)?;
         conn.address_add(vlan_name.clone(), vlan_addr, 24)?;
     }
 
@@ -191,6 +202,7 @@ fn configure_wan(conn: &Connection) -> Result<()> {
 
                 conn.address_flush6("eth0".to_string())?;
                 conn.address_add_link_local("eth0".to_string(), LINK_LOCAL.into(), 64)?;
+                conn.address_add("eth0".to_string(), ula!(0).into(), 64)?;
                 conn.address_add("eth0".to_string(), addr_lan.into(), 64)?;
 
                 println!("[info] config eth0 gua {}/64", addr_lan);
@@ -203,6 +215,7 @@ fn configure_wan(conn: &Connection) -> Result<()> {
 
                     conn.address_flush6(vlan_name.clone())?;
                     conn.address_add_link_local(vlan_name.clone(), LINK_LOCAL.into(), 64)?;
+                    conn.address_add(vlan_name.clone(), ula!(2 + i as u16).into(), 64)?;
                     conn.address_add(vlan_name.clone(), vlan_addr.into(), 64)?;
 
                     println!(
