@@ -116,7 +116,9 @@ fn create_vlans(conn: &Connection) -> Result<()> {
         let vlan_id = 10 * (i + 1);
         let vlan_name = format!("eth0.{}", vlan_id);
 
-        conn.link_add_vlan(vlan_name.clone(), "eth0".to_string(), vlan_id as u16)?;
+        if !conn.link_exists(vlan_name.clone())? {
+            conn.link_add_vlan(vlan_name.clone(), "eth0".to_string(), vlan_id as u16)?;
+        }
         conn.link_set(vlan_name.clone(), true)?;
 
         conn.address_flush(vlan_name.clone())?;
