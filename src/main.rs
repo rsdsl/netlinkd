@@ -103,7 +103,7 @@ fn main() -> Result<()> {
 fn configure_lan(conn: &Connection) -> Result<()> {
     conn.address_flush("eth0".into())?;
     conn.address_add_link_local("eth0".into(), LINK_LOCAL.into(), 64)?;
-    conn.address_add("eth0".into(), ula!(0).into(), 64)?;
+    conn.address_add("eth0".into(), ula!(1).into(), 64)?;
     conn.address_add("eth0".into(), "10.128.0.254".parse()?, 24)?;
 
     Ok(())
