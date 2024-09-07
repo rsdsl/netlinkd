@@ -29,6 +29,11 @@ const ADDR_B4: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 2);
 const LINK_LOCAL: Ipv6Addr = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1);
 const ULA_TEMPLATE: Ipv6Addr = Ipv6Addr::new(0xfd0b, 0x9272, 0x534e, 0, 0, 0, 0, 1);
 
+// Many DSL and GPON providers use this value, but some may require modifying
+// this value. Since this is a custom system and potential ISPs are known in
+// advance, robustness is more important than configurability here.
+const VLAN_TAG: u16 = 7;
+
 macro_rules! ula {
     ($subnet:expr) => {{
         let mut segments = ULA_TEMPLATE.segments();
@@ -92,6 +97,9 @@ fn main() -> Result<()> {
     configure_modem(&conn)?;
     println!("[info] config eth1 192.168.1.2/24 (modem)");
 
+    configure_carrier(&conn)?;
+    println!("[info] config carrier0 eth1.{}", VLAN_TAG);
+
     let mut signals = Signals::new([SIGUSR1])?;
     for _ in signals.forever() {
         configure_wan_logged(&conn);
@@ -146,6 +154,17 @@ fn configure_vlans(conn: &Connection) -> Result<()> {
 fn configure_modem(conn: &Connection) -> Result<()> {
     conn.address_flush("eth1".into())?;
     conn.address_add("eth1".into(), "192.168.1.2".parse()?, 24)?;
+
+    Ok(())
+}
+
+fn configure_carrier(conn: &Connection) -> Result<()> {
+    let vlan_name = String::from("carrier0");
+
+    if !conn.link_exists(vlan_name.clone())? {
+        conn.link_add_vlan(vlan_name.clone(), "eth1".to_string(), VLAN_TAG)?;
+    }
+    conn.link_set(vlan_name.clone(), true)?;
 
     Ok(())
 }
