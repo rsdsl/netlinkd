@@ -415,7 +415,7 @@ dependencies = [
 
 [[package]]
 name = "rsdsl_netlinkd"
-version = "0.9.4-dev"
+version = "0.9.4"
 dependencies = [
  "ipnet",
  "netlink-packet-core",
