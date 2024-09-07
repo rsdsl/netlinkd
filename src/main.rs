@@ -95,7 +95,7 @@ fn main() -> Result<()> {
     conn.link_set("eth1".into(), true)?;
 
     configure_modem(&conn)?;
-    println!("[info] config eth1 192.168.1.2/24 (modem)");
+    println!("[info] config eth1 192.168.1.2/24 192.168.100.2/24 (modem)");
 
     configure_carrier(&conn)?;
     println!("[info] config carrier0 eth1.{}", VLAN_TAG);
@@ -154,6 +154,7 @@ fn configure_vlans(conn: &Connection) -> Result<()> {
 fn configure_modem(conn: &Connection) -> Result<()> {
     conn.address_flush("eth1".into())?;
     conn.address_add("eth1".into(), "192.168.1.2".parse()?, 24)?;
+    conn.address_add("eth1".into(), "192.168.100.2".parse()?, 24)?;
 
     Ok(())
 }
