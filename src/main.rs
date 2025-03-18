@@ -1,4 +1,5 @@
 use rsdsl_netlinklib::blocking::Connection;
+use rsdsl_netlinklib::route::{Route4, Route6};
 
 use std::fs::{self, File};
 use std::io;
@@ -196,14 +197,30 @@ fn configure_wan(conn: &Connection) -> Result<()> {
 
         if let Some(v4) = ds_config.v4 {
             conn.address_add("ppp0".to_string(), v4.addr.into(), 32)?;
-            conn.route_add4(Ipv4Addr::UNSPECIFIED, 0, None, "ppp0".to_string())?;
+            conn.route_add4(Route4 {
+                dst: Ipv4Addr::UNSPECIFIED,
+                prefix_len: 0,
+                rtr: None,
+                on_link: false,
+                table: None,
+                metric: Some(100),
+                link: String::from("ppp0"),
+            })?;
 
             println!("[info] config ppp0 {}/32", v4.addr);
         }
 
         if let Some(v6) = ds_config.v6 {
             conn.address_add_link_local("ppp0".to_string(), v6.laddr.into(), 64)?;
-            conn.route_add6(Ipv6Addr::UNSPECIFIED, 0, None, "ppp0".to_string())?;
+            conn.route_add6(Route6 {
+                dst: Ipv6Addr::UNSPECIFIED,
+                prefix_len: 0,
+                rtr: None,
+                on_link: false,
+                table: None,
+                metric: Some(100),
+                link: String::from("ppp0"),
+            })?;
 
             println!("[info] config ppp0 ll {}/64", v6.laddr);
 
@@ -255,12 +272,15 @@ fn configure_wan(conn: &Connection) -> Result<()> {
                     conn.address_add("dslite0".to_string(), ADDR_B4.into(), 29)?;
 
                     if ds_config.v4.is_none() {
-                        conn.route_add4(
-                            Ipv4Addr::UNSPECIFIED,
-                            0,
-                            Some(ADDR_AFTR),
-                            "dslite0".to_string(),
-                        )?;
+                        conn.route_add4(Route4 {
+                            dst: Ipv4Addr::UNSPECIFIED,
+                            prefix_len: 0,
+                            rtr: Some(ADDR_AFTR),
+                            on_link: false,
+                            table: None,
+                            metric: Some(50),
+                            link: String::from("dslite0"),
+                        })?;
                     }
 
                     println!("[info] config dslite0 {}/29", ADDR_B4);
