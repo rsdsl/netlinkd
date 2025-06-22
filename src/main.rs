@@ -29,6 +29,7 @@ const ADDR_AFTR: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 1);
 const ADDR_B4: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 2);
 const LINK_LOCAL: Ipv6Addr = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1);
 const ULA_TEMPLATE: Ipv6Addr = Ipv6Addr::new(0xfd0b, 0x9272, 0x534e, 0, 0, 0, 0, 1);
+const PI_TEMPLATE: Ipv6Addr = Ipv6Addr::new(0x2001, 0x678, 0xb24, 0x1000, 0, 0, 0, 0);
 
 // Many DSL and GPON providers use this value, but some may require modifying
 // this value. Since this is a custom system and potential ISPs are known in
@@ -38,6 +39,14 @@ const VLAN_TAG: u16 = 7;
 macro_rules! ula {
     ($subnet:expr) => {{
         let mut segments = ULA_TEMPLATE.segments();
+        segments[3] += $subnet;
+        Ipv6Addr::from(segments)
+    }};
+}
+
+macro_rules! pi_net {
+    ($subnet:expr) => {{
+        let mut segments = PI_TEMPLATE.segments();
         segments[3] += $subnet;
         Ipv6Addr::from(segments)
     }};
@@ -113,6 +122,7 @@ fn configure_lan(conn: &Connection) -> Result<()> {
     conn.address_flush("eth0".into())?;
     conn.address_add_link_local("eth0".into(), LINK_LOCAL.into(), 64)?;
     conn.address_add("eth0".into(), ula!(1).into(), 64)?;
+    conn.address_add("eth0".into(), pi_net!(1).into(), 64)?;
     conn.address_add("eth0".into(), "10.128.0.254".parse()?, 24)?;
 
     Ok(())
@@ -146,6 +156,7 @@ fn configure_vlans(conn: &Connection) -> Result<()> {
 
         conn.address_add_link_local(vlan_name.clone(), LINK_LOCAL.into(), 64)?;
         conn.address_add(vlan_name.clone(), ula!(2 + i as u16).into(), 64)?;
+        conn.address_add(vlan_name.clone(), pi_net!(2 + i as u16).into(), 64)?;
         conn.address_add(vlan_name.clone(), vlan_addr, 24)?;
     }
 
@@ -242,6 +253,7 @@ fn configure_wan(conn: &Connection) -> Result<()> {
                 conn.address_flush6("eth0".to_string())?;
                 conn.address_add_link_local("eth0".to_string(), LINK_LOCAL.into(), 64)?;
                 conn.address_add("eth0".to_string(), ula!(0).into(), 64)?;
+                conn.address_add("eth0".to_string(), pi_net!(0).into(), 64)?;
                 conn.address_add("eth0".to_string(), addr_lan.into(), 64)?;
 
                 println!("[info] config eth0 gua {}/64", addr_lan);
@@ -255,6 +267,7 @@ fn configure_wan(conn: &Connection) -> Result<()> {
                     conn.address_flush6(vlan_name.clone())?;
                     conn.address_add_link_local(vlan_name.clone(), LINK_LOCAL.into(), 64)?;
                     conn.address_add(vlan_name.clone(), ula!(2 + i as u16).into(), 64)?;
+                    conn.address_add(vlan_name.clone(), pi_net!(2 + i as u16).into(), 64)?;
                     conn.address_add(vlan_name.clone(), vlan_addr.into(), 64)?;
 
                     println!(
