@@ -85,11 +85,13 @@ fn main() -> Result<()> {
     conn.link_set("eth0".into(), true)?;
 
     configure_lan(&conn)?;
-    println!("[info] config eth0 10.128.0.254/24 fe80::1/64 fd0b:9272:534e:1::/64");
+    println!("[info] config eth0 10.128.0.254/24 fe80::1/64 fd0b:9272:534e:1::/64 2001:678:b24:1001::1/64");
 
     create_vlans(&conn)?;
     configure_vlans(&conn)?;
-    println!("[info] config vlans 10.128.0.0/16 fe80::1/64 fd0b:9272:534e::/48");
+    println!(
+        "[info] config vlans 10.128.0.0/16 fe80::1/64 fd0b:9272:534e::/48 2001:678:b24:1000::/52"
+    );
 
     fs::write("/proc/sys/net/ipv4/ip_forward", "1")?;
     println!("[info] enable ipv4 routing");
