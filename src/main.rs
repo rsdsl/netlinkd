@@ -85,7 +85,7 @@ fn main() -> Result<()> {
     conn.link_set("eth0".into(), true)?;
 
     configure_lan(&conn)?;
-    println!("[info] config eth0 10.128.0.254/24 fe80::1/64 fd0b:9272:534e:1::/64 2001:678:b24:1001::1/64");
+    println!("[info] config eth0 10.128.0.254/24 fe80::1/64 fd0b:9272:534e:1::1/64 2001:678:b24:1001::1/64");
 
     create_vlans(&conn)?;
     configure_vlans(&conn)?;
