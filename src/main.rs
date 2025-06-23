@@ -29,7 +29,7 @@ const ADDR_AFTR: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 1);
 const ADDR_B4: Ipv4Addr = Ipv4Addr::new(192, 0, 0, 2);
 const LINK_LOCAL: Ipv6Addr = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1);
 const ULA_TEMPLATE: Ipv6Addr = Ipv6Addr::new(0xfd0b, 0x9272, 0x534e, 0, 0, 0, 0, 1);
-const PI_TEMPLATE: Ipv6Addr = Ipv6Addr::new(0x2001, 0x678, 0xb24, 0x1000, 0, 0, 0, 0);
+const PI_TEMPLATE: Ipv6Addr = Ipv6Addr::new(0x2001, 0x678, 0xb24, 0x1000, 0, 0, 0, 1);
 
 // Many DSL and GPON providers use this value, but some may require modifying
 // this value. Since this is a custom system and potential ISPs are known in
